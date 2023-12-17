@@ -2,7 +2,7 @@
 
 ## Convert a MIDI file to LilyPond format
 
-MidiToLily is a Windows console application converts a MIDI file to LilyPond format. You can create sheet music from a MIDI file by using MidiToLily as a preprocessor for LilyPond. MidiToLily is an alternative to the midi2ly script that ships with LilyPond.
+MidiToLily is a Windows console application that converts a MIDI file to LilyPond format. You can create sheet music from a MIDI file by using MidiToLily as a preprocessor for LilyPond. MidiToLily is an alternative to the midi2ly script that ships with LilyPond.
 
 # Getting started
 
