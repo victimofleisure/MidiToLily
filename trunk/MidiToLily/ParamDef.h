@@ -26,7 +26,7 @@ PARAMDEF(quant)		// Quantize note start and end times to the specified duration
 PARAMDEF(triplet)	// Quantize note start and end times to the specified TRIPLET
                     // duration (1=whole, 2=half, 4=quarter, etc.); if combined
                     // with regular quantization, notes snap to the nearest grid.
-					// 4=quarter etc.); can be combined with regular quant
+                    // 4=quarter etc.); can be combined with regular quant
 PARAMDEF(offset)	// Signed offset in ticks added to all MIDI event times.
 PARAMDEF(clef)		// Comma-separated list of clef overrides, each consisting of
                     // t=c, where t is a track index and c is a clef name defined
