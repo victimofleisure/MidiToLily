@@ -46,6 +46,16 @@ PARAMDEF(logging)   // Enables various types of logging; specify * to enable all
 #undef PARAMDEF
 #endif
 
+#ifdef HELPEXAMPLEDEF
+
+HELPEXAMPLEDEF(QUANT)
+HELPEXAMPLEDEF(SECTION)
+HELPEXAMPLEDEF(CLEF)
+HELPEXAMPLEDEF(OTTAVA)
+					
+#undef HELPEXAMPLEDEF
+#endif
+
 #ifdef LOGGINGTYPEDEF
 
 LOGGINGTYPEDEF(PARAMETERS)

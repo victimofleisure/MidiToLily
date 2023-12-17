@@ -146,6 +146,11 @@ const LPCTSTR CMidiToLily::m_arrClefName[CLEFS] = {
 	_T("G"),
 };
 
+const LPCTSTR CMidiToLily::m_arrLoggingTypeName[LOGGING_TYPES] = {
+	#define LOGGINGTYPEDEF(name) _T(#name),
+	#include "ParamDef.h"	// use preprocessor to generate array init
+};
+
 static const bool m_bWriteFine = true;	// in case we make it optional
 
 CMidiToLily::CMidiToLily()
@@ -975,6 +980,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			return 0;
 		}
 		if (argc < 2) {	// if not enough arguments
+//			parser.WriteHelpMarkdown(_T("help.txt"));
 			parser.ShowHelp();	// show help and exit
 			return 0;
 		}

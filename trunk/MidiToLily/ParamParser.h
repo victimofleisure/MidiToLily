@@ -35,9 +35,10 @@ public:
 	bool	ParseCommandLine();
 	static	CString	GetAppVersionString();
 	static	void	ShowAppVersion();
-	static	void	ShowHelp();
 	static	void	ShowLicense();
+	static	void	ShowHelp();
 	static	void	BreakIntoLines(CString sText, CStringArrayEx& arrLine, int nMaxLine = 80);
+	static	void	WriteHelpMarkdown(LPCTSTR pszOutputPath);
 
 // Overrides
 	virtual void ParseParam(const TCHAR* pszParam, BOOL bFlag, BOOL bLast);
@@ -46,6 +47,7 @@ protected:
 // Constants
 	enum {	// define post-parsing actions
 		ACT_CONTINUE,
+		ACT_EXIT,
 		ACT_SHOW_HELP,
 		ACT_SHOW_LICENSE,
 	};
@@ -65,7 +67,9 @@ protected:
 	void	OnSection(CString sParam);
 	void	OnOttava(CString sParam);
 	void	OnLogging(CString sParam);
+	static	CString	UnpackHelp(CString& sParam, int nParamHelpResID, bool bArgumentUpperCase = true);
 	static	void	ShowParamHelp(LPCTSTR pszParamName, int nParamHelpResID, bool bArgumentUpperCase = true);
+	static	void	WriteParamHelpMarkdown(CStdioFile& fOut, LPCTSTR pszParamName, int nParamHelpResID, bool bArgumentUpperCase = true);
 };
 
 inline LPCTSTR CParamParser::GetFlagName(int iFlag)

@@ -171,6 +171,11 @@ void CParamParser::OnLogging(CString sParam)
 {
 	if (sParam == '*') {	// if parameter is wildcard
 		m_nLoggingMask = UINT_MAX;	// set all bits
+	} else if (sParam == '?') {
+		for (int iType = 0; iType < CMidiToLily::LOGGING_TYPES; iType++) {
+			_tprintf(_T("%s = 0x%x\n"), CMidiToLily::GetLoggingTypeName(iType), 1 << iType);
+		}
+		m_nAction = ACT_EXIT;
 	} else {	// not wildcard, so expecting a bitmask as a hexadecimal number
 		int	nConvs = _stscanf_s(sParam.GetString(), _T("%x"), &m_nLoggingMask);
 		if (nConvs != 1) {	// if conversion failed
@@ -274,12 +279,12 @@ bool CParamParser::ParseCommandLine()
 	switch (m_nAction) {
 	case ACT_SHOW_HELP:
 		ShowHelp();
-		return false;
+		break;
 	case ACT_SHOW_LICENSE:
 		ShowLicense();
-		return false;
+		break;
 	}
-	return true;	// continue processing
+	return m_nAction == ACT_CONTINUE;
 }
 
 void CParamParser::BreakIntoLines(CString sText, CStringArrayEx& arrLine, int nMaxLine)
@@ -307,10 +312,9 @@ void CParamParser::BreakIntoLines(CString sText, CStringArrayEx& arrLine, int nM
 	}
 }
 
-void CParamParser::ShowParamHelp(LPCTSTR pszParamName, int nParamHelpResID, bool bArgumentUpperCase)
+CString CParamParser::UnpackHelp(CString& sParam, int nParamHelpResID, bool bArgumentUpperCase)
 {
 	CString	sHelp(LDS(nParamHelpResID));
-	CString	sParam(pszParamName);
 	bool	bHaveParamName = !sParam.IsEmpty();
 	if (bHaveParamName) {	// if parameter name was specified
 		sParam.Insert(0, '-');	// insert parameter prefix
@@ -330,15 +334,7 @@ void CParamParser::ShowParamHelp(LPCTSTR pszParamName, int nParamHelpResID, bool
 			sHelp = sHelp.Mid(iDelimiter + 2);	// remove argument from help string
 		}
 	}
-	CStringArrayEx	arrLine;
-	const int	nMaxLine = 80;
-	const int	nMaxParam = 19;
-	BreakIntoLines(sHelp, arrLine, nMaxLine - nMaxParam - 1);
-	for (int iLine = 0; iLine < arrLine.GetSize(); iLine++) {	// for each line of help text
-		// field length is negative so that parameter is left-adjusted
-		_tprintf(_T("%*s %s\n"), -nMaxParam, sParam.GetString(), arrLine[iLine].GetString());
-		sParam.Empty();	// so continuation lines don't repeat parameter
-	}
+	return sHelp;
 }
 
 CString	CParamParser::GetAppVersionString()
@@ -358,22 +354,6 @@ void CParamParser::ShowAppVersion()
 	_putts(sVersionLine.GetString());
 }
 
-void CParamParser::ShowHelp()
-{
-	ShowAppVersion();
-	CString	sHelpUsage(LDS(IDS_HELP_USAGE) + '\n');
-	_putts(sHelpUsage.GetString());
-	ShowParamHelp(_T(""), IDS_HELP_PARAM_path);	// show path help
-	#define PARAMDEF(name) ShowParamHelp(_T(#name), IDS_HELP_PARAM_##name);
-	#include "ParamDef.h"	// use preprocessor to generate help for each flag
-	CString	sExampleHead('\n' + LDS(IDS_HELP_EXAMPLES));
-	_putts(sExampleHead.GetString());	// show some examples too
-	ShowParamHelp(_T(""), IDS_EXAMPLE_QUANT, false);	// don't change argument's case
-	ShowParamHelp(_T(""), IDS_EXAMPLE_SECTION, false);
-	ShowParamHelp(_T(""), IDS_EXAMPLE_CLEF, false);
-	ShowParamHelp(_T(""), IDS_EXAMPLE_OTTAVA, false);
-}
-
 void CParamParser::ShowLicense()
 {	
 	ShowAppVersion();
@@ -388,3 +368,53 @@ void CParamParser::ShowLicense()
 	}
 }
 
+void CParamParser::ShowHelp()
+{
+	ShowAppVersion();
+	CString	sHelpUsage(LDS(IDS_HELP_USAGE) + '\n');
+	_putts(sHelpUsage.GetString());
+	ShowParamHelp(_T(""), IDS_HELP_PARAM_path);	// show path help
+	#define PARAMDEF(name) ShowParamHelp(_T(#name), IDS_HELP_PARAM_##name);
+	#include "ParamDef.h"	// use preprocessor to generate help for each flag
+	CString	sExampleHead('\n' + LDS(IDS_HELP_EXAMPLES));
+	_putts(sExampleHead.GetString());	// show some examples too
+	#define HELPEXAMPLEDEF(name) ShowParamHelp(_T(""), IDS_EXAMPLE_##name, false);
+	#include "ParamDef.h"	// use preprocessor to generate help examples
+}
+
+void CParamParser::WriteHelpMarkdown(LPCTSTR pszOutputPath)
+{
+	CStdioFile	fOut(pszOutputPath, CFile::modeCreate | CFile::modeWrite);
+	fOut.WriteString(_T("### ") + LDS(IDS_HELP_USAGE) + _T("\n\n"));
+	fOut.WriteString(_T("|Option|Description|\n|---|---|\n"));
+	WriteParamHelpMarkdown(fOut, _T(""), IDS_HELP_PARAM_path);	// show path help
+	#define PARAMDEF(name) WriteParamHelpMarkdown(fOut, _T(#name), IDS_HELP_PARAM_##name);
+	#include "ParamDef.h"	// use preprocessor to generate help for each flag
+	fOut.WriteString(_T("\n### Examples\n\n"));
+	fOut.WriteString(_T("|Example|Description|\n|---|---|\n"));
+	#define HELPEXAMPLEDEF(name) WriteParamHelpMarkdown(fOut, _T(""), IDS_EXAMPLE_##name, false);
+	#include "ParamDef.h"	// use preprocessor to generate help examples
+}
+
+void CParamParser::ShowParamHelp(LPCTSTR pszParamName, int nParamHelpResID, bool bArgumentUpperCase)
+{
+	CString	sParam(pszParamName);
+	CString	sHelp(UnpackHelp(sParam, nParamHelpResID, bArgumentUpperCase));
+	CStringArrayEx	arrLine;
+	const int	nMaxLine = 80;
+	const int	nMaxParam = 19;
+	BreakIntoLines(sHelp, arrLine, nMaxLine - nMaxParam - 1);
+	for (int iLine = 0; iLine < arrLine.GetSize(); iLine++) {	// for each line of help text
+		// field length is negative so that parameter is left-adjusted
+		_tprintf(_T("%*s %s\n"), -nMaxParam, sParam.GetString(), arrLine[iLine].GetString());
+		sParam.Empty();	// so continuation lines don't repeat parameter
+	}
+}
+
+void CParamParser::WriteParamHelpMarkdown(CStdioFile& fOut, LPCTSTR pszParamName, int nParamHelpResID, bool bArgumentUpperCase)
+{
+	CString	sParam(pszParamName);
+	CString	sHelp(UnpackHelp(sParam, nParamHelpResID, bArgumentUpperCase));
+	sParam.Replace(_T(" "), _T("&nbsp;"));
+	fOut.WriteString('|' + sParam + '|' + sHelp + _T("|\n"));
+}

@@ -60,6 +60,7 @@ public:
 	enum {	// define logging types
 		#define LOGGINGTYPEDEF(name) LOG_##name,
 		#include "ParamDef.h"	// use preprocessor to generate enum
+		LOGGING_TYPES
 	};
 	enum {	// define a unique bit for each logging type
 		#define LOGGINGTYPEDEF(name) LOGBIT_##name = 1 << LOG_##name,
@@ -71,6 +72,9 @@ public:
 	WORD	GetTimebase() const;
 	void	GetParams(CParams& params) const;
 	void	SetParams(const CParams& params);
+	bool	IsLogging() const;
+	bool	IsLogging(int iLoggingType) const;
+	static	LPCTSTR	GetLoggingTypeName(int iLoggingType);
 
 // Operations
 	static	void	OnError(CString sErrMsg);
@@ -130,6 +134,7 @@ protected:
 		CLEFS
 	};
 	static const LPCTSTR	m_arrClefName[CLEFS];
+	static const LPCTSTR	m_arrLoggingTypeName[LOGGING_TYPES];
 
 // Member data
 	CTrackArray	m_arrTrack;	// array of tracks
@@ -149,8 +154,6 @@ protected:
 	CParams	m_params;		// command-line parameters
 
 // Helpers
-	bool	IsLogging() const;
-	bool	IsLogging(int iLoggingType) const;
 	void	OnMidiFileRead(CMidiFile::CMidiTrackArray& arrTrack);
 	static	int		CalcQuantError(int nTime, int nQuant);
 	void	PrepareMidiEvents(const CMidiFile::CMidiEventArray& arrInEvent, int iTrack);
@@ -189,7 +192,14 @@ inline bool CMidiToLily::IsLogging() const
 
 inline bool CMidiToLily::IsLogging(int iLoggingType) const
 {
+	ASSERT(iLoggingType >= 0 && iLoggingType < LOGGING_TYPES);
 	return (m_params.m_nLoggingMask & (1 << iLoggingType)) != 0;
+}
+
+inline LPCTSTR CMidiToLily::GetLoggingTypeName(int iLoggingType)
+{
+	ASSERT(iLoggingType >= 0 && iLoggingType < LOGGING_TYPES);
+	return m_arrLoggingTypeName[iLoggingType];
 }
 
 inline int CMidiToLily::GetTrackCount() const
