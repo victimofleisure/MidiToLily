@@ -415,6 +415,7 @@ void CParamParser::WriteParamHelpMarkdown(CStdioFile& fOut, LPCTSTR pszParamName
 {
 	CString	sParam(pszParamName);
 	CString	sHelp(UnpackHelp(sParam, nParamHelpResID, bArgumentUpperCase));
-	sParam.Replace(_T(" "), _T("&nbsp;"));
+	sParam.Replace(_T(" "), _T("&nbsp;"));	// non-breaking space
+	sParam.Replace(_T("-"), _T("&#8209;"));	// non-breaking hyphen
 	fOut.WriteString('|' + sParam + '|' + sHelp + _T("|\n"));
 }
