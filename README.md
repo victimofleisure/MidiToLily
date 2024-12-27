@@ -49,11 +49,11 @@ Download the latest release, unzip it, and run MidiToLily.exe. MidiToLily doesn'
 
 Only type 0 MIDI files are supported, and the first track is reserved for the tempo map.
 
-Track indices are zero-based, but the tempo map is track zero, so the first track with *note events* is track one. The valid range of a track index in a command line parameter is from one to the number of tracks in the MIDI file.
+Track indices are zero-based, but since the tempo map is track zero, the first track with *note events* is track one. The valid range of a track index in a command line parameter is from one to the number of tracks in the MIDI file.
 
 If your input MIDI file isn't quantized, use the quant and triplet parameters, otherwise you'll get errors, such as invalid duration.
 
-If your tracks aren't assigned to staves in the desired order, use the staves parameter to reorder them. The staves parameter can also be used to filter out certain tracks.
+If your tracks aren't assigned to staves in the desired order, you can use the staves parameter to reorder them. The staves parameter can also be used to filter out specific tracks.
 
 # Development
 
