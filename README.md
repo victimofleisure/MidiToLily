@@ -17,6 +17,9 @@ Download the latest release, unzip it, and run MidiToLily.exe. MidiToLily doesn'
 |MIDI_FILE|The path of the input MIDI file; if it contains spaces, enclose it in double quotes.|
 |&#8209;output&nbsp;PATH|The path of the output LilyPond file; if it contains spaces, enclose it in double quotes.|
 |&#8209;title&nbsp;STRING|The title of the composition; if it contains spaces, enclose it in double quotes.|
+|&#8209;subtitle&nbsp;STRING|The subtitle of the composition; if it contains spaces, enclose it in double quotes.|
+|&#8209;opus&nbsp;STRING|The title of the opus; if it contains spaces, enclose it in double quotes.|
+|&#8209;piece&nbsp;STRING|The title of the piece; if it contains spaces, enclose it in double quotes.|
 |&#8209;composer&nbsp;STRING|The name of the composer; if it contains spaces, enclose it in double quotes.|
 |&#8209;copyright&nbsp;STRING|The copyright notice; if it contains spaces, enclose it in double quotes.|
 |&#8209;frenched|Hide empty staves.|
@@ -27,6 +30,7 @@ Download the latest release, unzip it, and run MidiToLily.exe. MidiToLily doesn'
 |&#8209;clef&nbsp;LIST|Comma-separated list of clef overrides, each consisting of t=c, where t is a track index and c is a clef name defined in LilyPond. By default, a track is automatically assigned treble or bass clef, depending on what pitches it uses.|
 |&#8209;section&nbsp;LIST|Comma-separated list of measure numbers, each of which specifies the start of a section.|
 |&#8209;ottava&nbsp;LIST|Comma-separated list of octave shifts, each consisting of t_M:B:T=n where t is a track index, M:B:T is a time in Measure:Beat:Tick format, and n is a signed number of octaves to transpose the staff by.|
+|&#8209;staves&nbsp;LIST|Comma-separated list of track indices specifying which tracks are assigned to staves, from top to bottom.|
 |&#8209;help|Display the help.|
 |&#8209;license|Display the license.|
 |&#8209;logging&nbsp;TYPE|Enables various types of logging; specify a bitmask in hexadecimal, ? to list the types, or * to enable all.|
@@ -39,7 +43,17 @@ Download the latest release, unzip it, and run MidiToLily.exe. MidiToLily doesn'
 |&#8209;section&nbsp;33,65|Start sections at measures 33 and 65.|
 |&#8209;clef&nbsp;1=C,2=C|Use alto clef for tracks 1 and 2.|
 |&#8209;ottava&nbsp;1_5:3:0=2|Shift track 1 up two octaves starting at MBT time 5:3:0. The longer example 1_5:3:0=2,1_8:1:45=0 also restores the same track to its unshifted state at 8:1:45.|
+|&#8209;staves&nbsp;3,1,2|Assign track 3 to the top staff, track 1 to the middle staff, and track 2 to the bottom staff.|
 
+# Tips
+
+Only type 0 MIDI files are supported, and the first track is reserved for the tempo map.
+
+Track indices are zero-based, but the tempo map is track 0, so the first track with *note events* is track 1. The valid range of a track index in a command line parameter is from one to the number of tracks in the MIDI file.
+
+If your input MIDI file isn't quantized, use the quant and triplet parameters, otherwise you'll get errors, such as invalid duration.
+
+If your tracks aren't assigned to staves in the desired order, use the staves parameter to reorder them. The staves parameter can also be used to filter out certain tracks.
 
 # Development
 
