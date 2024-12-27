@@ -998,6 +998,10 @@ void CMidiToLily::VerifyLilyMidi(LPCTSTR pszLilyMidiFilePath)
 	DumpEvents(pszInEventPath, 90, true);	// override note velocities with LilyPond default velocity, and use staves
 	CMidiToLily	lily;
 	lily.SetParams(m_params);
+	// if staves are specified, LilyPond MIDI file can have fewer tracks than input MIDI file, due to filtering
+	lily.m_params.m_arrClef.FastRemoveAll();	// avoid track index range errors in OnMidiFileRead
+	lily.m_params.m_arrOttavaArray.FastRemoveAll();
+	lily.m_params.m_arrStave.FastRemoveAll();
 	lily.m_params.m_nOffset = 0;	// LilyPond input file accounts for offset if any
 	lily.ReadMidiFile(pszLilyMidiFilePath);
 	double	fTimebaseScaling = m_nTimebase / double(lily.m_nTimebase);	// don't assume same timebase
