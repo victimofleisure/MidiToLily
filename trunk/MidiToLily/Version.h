@@ -9,6 +9,7 @@
 		rev		date	comments
 		00		17dec23	1.0.00.001
 		01		11dec24	1.0.00.002
+		02		27dec24	1.0.00.003
 
 		DON'T FORGET TO CHANGE VERSION RESOURCE IN .RC2
 

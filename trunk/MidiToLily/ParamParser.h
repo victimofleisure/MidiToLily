@@ -8,6 +8,7 @@
 		revision history:
 		rev		date	comments
         00		08dec23	initial version
+		01		27dec24	add subtitle, opus, piece and staves params
  
 */
 
@@ -66,6 +67,7 @@ protected:
 	void	OnClef(CString sParam);
 	void	OnSection(CString sParam);
 	void	OnOttava(CString sParam);
+	void	OnStaves(CString sParam);
 	void	OnLogging(CString sParam);
 	static	CString	UnpackHelp(CString& sParam, int nParamHelpResID, bool bArgumentUpperCase = true);
 	static	void	ShowParamHelp(LPCTSTR pszParamName, int nParamHelpResID, bool bArgumentUpperCase = true);

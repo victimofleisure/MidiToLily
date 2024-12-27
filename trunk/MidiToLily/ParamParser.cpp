@@ -8,6 +8,7 @@
 		revision history:
 		rev		date	comments
         00		08dec23	initial version
+		01		27dec24	add subtitle, opus, piece and staves params
  
 */
 
@@ -167,6 +168,21 @@ void CParamParser::OnOttava(CString sParam)
 	}
 }
 
+void CParamParser::OnStaves(CString sParam)
+{
+	CString	sToken;
+	int	iStart = 0;
+	while (!(sToken = sParam.Tokenize(_T(","), iStart)).IsEmpty()) {
+		int	iTrack;
+		int	nConvs = _stscanf_s(sToken.GetString(), _T("%d"), &iTrack);
+		if (nConvs != 1 || iTrack < 0 || iTrack > SHRT_MAX) {	// if invalid track index
+			m_sErrMsg.Format(IDS_CLA_STAVES_BAD_TRACK_INDEX, sToken.GetString());
+			OnError(m_sErrMsg);
+		}
+		m_arrStave.Add(iTrack);
+	}
+}
+
 void CParamParser::OnLogging(CString sParam)
 {
 	if (sParam == '*') {	// if parameter is wildcard
@@ -241,6 +257,15 @@ ParseParamEval:
 		case F_title:
 			m_sTitle = pszParam;
 			break;
+		case F_subtitle:
+			m_sSubtitle = pszParam;
+			break;
+		case F_opus:
+			m_sOpus = pszParam;
+			break;
+		case F_piece:
+			m_sPiece = pszParam;
+			break;
 		case F_composer:
 			m_sComposer = pszParam;
 			break;
@@ -264,6 +289,9 @@ ParseParamEval:
 			break;
 		case F_ottava:
 			OnOttava(pszParam);
+			break;
+		case F_staves:
+			OnStaves(pszParam);
 			break;
 		case F_logging:
 			OnLogging(pszParam);

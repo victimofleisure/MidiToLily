@@ -8,6 +8,7 @@
 		revision history:
 		rev		date	comments
         00		08dec23	initial version
+		01		27dec24	add subtitle, opus, piece and staves params
  
 */
 
@@ -93,10 +94,13 @@ CMidiToLily::CParams::CParams()
 void CMidiToLily::CParams::Log() const
 {
 	_tprintf(_T("parameters:\n"));
-	_tprintf(_T("Output = \"%s\"\n"), m_sOutput);
-	_tprintf(_T("Title = \"%s\"\n"), m_sTitle);
-	_tprintf(_T("Composer = \"%s\"\n"), m_sComposer);
-	_tprintf(_T("Copyright = \"%s\"\n"), m_sCopyright);
+	_tprintf(_T("Output = \"%s\"\n"), m_sOutput.GetString());
+	_tprintf(_T("Title = \"%s\"\n"), m_sTitle.GetString());
+	_tprintf(_T("Subtitle = \"%s\"\n"), m_sSubtitle.GetString());
+	_tprintf(_T("Opus = \"%s\"\n"), m_sOpus.GetString());
+	_tprintf(_T("Piece = \"%s\"\n"), m_sPiece.GetString());
+	_tprintf(_T("Composer = \"%s\"\n"), m_sComposer.GetString());
+	_tprintf(_T("Copyright = \"%s\"\n"), m_sCopyright.GetString());
 	_tprintf(_T("Frenched = %d\n"), m_bFrenched);
 	_tprintf(_T("Offset = %d\n"), m_nOffset);
 	_tprintf(_T("Quant = %d\n"), m_nQuantDenom);
@@ -106,7 +110,7 @@ void CMidiToLily::CParams::Log() const
 		_tprintf(_T("Section %d = %d\n"), iSection, m_arrSection[iSection] + 1);
 	}
 	for (int iClef = 0; iClef < m_arrClef.GetSize(); iClef++) {
-		_tprintf(_T("Track %d clef = \"%s\"\n"), iClef, m_arrClef[iClef]);
+		_tprintf(_T("Track %d clef = \"%s\"\n"), iClef, m_arrClef[iClef].GetString());
 	}
 	for (int iTrack = 0; iTrack < m_arrOttavaArray.GetSize(); iTrack++) {
 		const COttavaArray& arrOttava = m_arrOttavaArray[iTrack];
@@ -115,6 +119,9 @@ void CMidiToLily::CParams::Log() const
 			const COttava& ot = arrOttava[iOttava];
 			_tprintf(_T("Ottava %d = %d %d\n"), iOttava, ot.m_nTick, ot.m_nShift);
 		}
+	}
+	for (int iStave = 0; iStave < m_arrStave.GetSize(); iStave++) {
+		_tprintf(_T("Stave %d track = %d\n"), iStave, m_arrStave[iStave]);
 	}
 }
 
@@ -331,7 +338,10 @@ void CMidiToLily::PrepareMidiEvents(const CMidiFile::CMidiEventArray& arrInEvent
 
 void CMidiToLily::OnMidiFileRead(CMidiFile::CMidiTrackArray& arrTrack)
 {
-	int	nTracks = arrTrack.GetSize();
+	int	nTracks = arrTrack.GetSize();	// only type 0 MIDI file is supported
+	if (nTracks < 2) {	// at least two tracks, with tempo map in first track
+		OnError(LDS(IDS_CLA_TOO_FEW_TRACKS));
+	}
 	int	nClefs = m_params.m_arrClef.GetSize();
 	if (nClefs > nTracks) {	// if we have clefs for non-existent tracks
 		LPCTSTR	pszFlagName = CParamParser::GetFlagName(CParamParser::F_clef);
@@ -346,6 +356,16 @@ void CMidiToLily::OnMidiFileRead(CMidiFile::CMidiTrackArray& arrTrack)
 		CString	sErrMsg;
 		sErrMsg.Format(IDS_CLA_TRACK_INDEX_RANGE, nOttavas - 1, pszFlagName);
 		OnError(sErrMsg);
+	}
+	int	nStaves = m_params.m_arrStave.GetSize();
+	for (int iStave = 0; iStave < nStaves; iStave++) {	// for each stave
+		int	iTrack = m_params.m_arrStave[iStave];
+		if (iTrack < 1 || iTrack >= nTracks) {	// if stave's track index is out of range
+			LPCTSTR	pszFlagName = CParamParser::GetFlagName(CParamParser::F_staves);
+			CString	sErrMsg;
+			sErrMsg.Format(IDS_CLA_TRACK_INDEX_RANGE, iTrack, pszFlagName);
+			OnError(sErrMsg);
+		}
 	}
 	m_params.m_arrOttavaArray.SetSize(nTracks);	// force one ottava array per track
 	// convert quantization from power of two denominator to duration in ticks
@@ -387,13 +407,27 @@ void CMidiToLily::LogEvents() const
 	}
 }
 
-void CMidiToLily::DumpEvents(LPCTSTR pszPath, int nVelocityOverride) const
+void CMidiToLily::DumpEvents(LPCTSTR pszPath, int nVelocityOverride, bool bUseStaves) const
 {
 	CStdioFile	fText(pszPath, CFile::modeCreate | CFile::modeWrite);
-	int	nTracks = m_arrTrack.GetSize();
+	if (m_params.m_arrStave.IsEmpty()) {	// if no staves
+		bUseStaves = false;	// override argument
+	}
+	int	nTracks;
+	if (bUseStaves) {	// if iterating staves instead of tracks
+		nTracks = m_params.m_arrStave.GetSize() + 1;	// account for tempo track
+	} else {	// no staves
+		nTracks = m_arrTrack.GetSize();
+	}
 	CString	sLine;
-	for (int iTrack = 0; iTrack < nTracks; iTrack++) {	// for each track
-		const CTrack&	track = m_arrTrack[iTrack];
+	for (int iTrack = 1; iTrack < nTracks; iTrack++) {	// for each track, excluding tempo track
+		int	iSrcTrack;
+		if (bUseStaves) {	// if iterating staves
+			iSrcTrack = m_params.m_arrStave[iTrack - 1];	// map stave to track; account for tempo track
+		} else {	// no staves
+			iSrcTrack = iTrack;	// no mapping
+		}
+		const CTrack&	track = m_arrTrack[iSrcTrack];
 		int	nEvents = track.m_arrEvent.GetSize();
 		sLine.Format(_T("track %d events %d\n"), iTrack, nEvents);
 		fText.WriteString(sLine);
@@ -405,6 +439,10 @@ void CMidiToLily::DumpEvents(LPCTSTR pszPath, int nVelocityOverride) const
 					nMsg &= 0xffff;	// zero velocity
 					nMsg |= nVelocityOverride << 16;	// update velocity
 				}
+			}
+			if (bUseStaves) {	// if iterating staves
+				nMsg &= ~0xf;	// zero channel
+				nMsg |= iTrack - 1;	// update channel to match sequential track order
 			}
 			int	nDur = evt.m_nDur;
 			if (!nDur) {
@@ -454,7 +492,7 @@ void CMidiToLily::LogNotes(int iTrack) const
 	int	nEvents = track.m_arrEvent.GetSize();
 	for (int iEvent = 0; iEvent < nEvents; iEvent++) {	// for each of input track's events
 		const CMidiEvent& evt = track.m_arrEvent[iEvent];
-		_tprintf(_T("%s "), MIDI_P1(evt.m_dwMsg));
+		_tprintf(_T("%d "), MIDI_P1(evt.m_dwMsg));
 	}
 	_tprintf(_T("\n"));
 }
@@ -850,12 +888,27 @@ void CMidiToLily::WriteBookHeader(CStdioFile& fLily)
 	CString	sHeader;
 	if (!m_params.m_sTitle.IsEmpty())
 		sHeader += _T("  title = \"") + m_params.m_sTitle + _T("\"\n");
+	if (!m_params.m_sSubtitle.IsEmpty())
+		sHeader += _T("  subtitle = \"") + m_params.m_sSubtitle + _T("\"\n");
 	if (!m_params.m_sComposer.IsEmpty())
 		sHeader += _T("  composer = \"") + m_params.m_sComposer + _T("\"\n");
 	if (!m_params.m_sCopyright.IsEmpty())
 		sHeader += _T("  copyright = \"") + m_params.m_sCopyright + _T("\"\n");
 	if (!sHeader.IsEmpty()) {
 		fLily.WriteString(_T("\\header {\n") + sHeader + _T("}\n"));
+	}
+}
+
+void CMidiToLily::WriteScoreHeader(CStdioFile& fLily)
+{
+	CString	sHeader;
+	if (!m_params.m_sOpus.IsEmpty())
+		sHeader += _T("    opus = \"") + m_params.m_sOpus + _T("\"\n");
+	if (!m_params.m_sPiece.IsEmpty())
+		sHeader += _T("    piece = \"") + m_params.m_sPiece + _T("\"\n");
+	fLily.WriteString(_T("\\score {\n"));
+	if (!sHeader.IsEmpty()) {
+		fLily.WriteString(_T("  \\header {\n") + sHeader + _T("  }\n"));
 	}
 }
 
@@ -882,10 +935,22 @@ void CMidiToLily::WriteLily(LPCTSTR pszOutputFilePath)
 		}
 		fLily.WriteString(_T("}\n"));	// end music block
 	}
+	WriteScoreHeader(fLily);
 	fLily.WriteString(
-		_T("\\score {\n")	// start score block
 		_T("  <<\n"));	// start staves
-	for (int iTrack = 1; iTrack < nTracks; iTrack++) {	// for each track
+	int	nStaves;
+	if (!m_params.m_arrStave.IsEmpty()) {	// if staves specified
+		nStaves = m_params.m_arrStave.GetSize();
+	} else {	// no staves
+		nStaves = m_arrTrack.GetSize() - 1;
+	}
+	for (int iStave = 0; iStave < nStaves; iStave++) {	// for each stave
+		int	iTrack;
+		if (!m_params.m_arrStave.IsEmpty()) {	// if staves specified
+			iTrack = m_params.m_arrStave[iStave];
+		} else {	// no staves
+			iTrack = iStave + 1;
+		}
 		fLily.WriteString(_T("  \\new Staff \\") + GetTrackVarName(iTrack) + '\n');
 	}
 	CString	sLayout;
@@ -930,7 +995,7 @@ void CMidiToLily::VerifyLilyMidi(LPCTSTR pszLilyMidiFilePath)
 	if (IsLogging()) {
 		_tprintf(_T("verifying Lily MIDI file \"%s\"\n"), pszLilyMidiFilePath);
 	}
-	DumpEvents(pszInEventPath, 90);	// override note velocities with LilyPond default velocity
+	DumpEvents(pszInEventPath, 90, true);	// override note velocities with LilyPond default velocity, and use staves
 	CMidiToLily	lily;
 	lily.SetParams(m_params);
 	lily.m_params.m_nOffset = 0;	// LilyPond input file accounts for offset if any

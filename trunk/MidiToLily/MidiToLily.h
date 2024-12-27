@@ -8,6 +8,7 @@
 		revision history:
 		rev		date	comments
         00		08dec23	initial version
+		01		27dec24	add subtitle, opus, piece and staves params
  
 */
 
@@ -41,6 +42,9 @@ public:
 		typedef CArrayEx<COttavaArray, COttavaArray&> COttavaArrayArray;
 		CString	m_sOutput;		// path of output file
 		CString	m_sTitle;		// optional title string
+		CString	m_sSubtitle;	// optional subtitle string
+		CString	m_sOpus;		// optional opus string
+		CString	m_sPiece;		// optional piece string
 		CString	m_sComposer;	// optional composer string
 		CString	m_sCopyright;	// optional copyright string
 		bool	m_bFrenched;	// true if hiding empty staves
@@ -52,6 +56,7 @@ public:
 		CStringArrayEx	m_arrClef;	// array of clef overrides; one item per track, omitting trailing empty clefs
 		CIntArrayEx	m_arrSection;	// array of sections; each item is a zero-based measure index
 		COttavaArrayArray	m_arrOttavaArray;	// one array of ottava arrays per track
+		CIntArrayEx	m_arrStave;	// array of track indices specifying which tracks are assigned to staves
 		void	Finalize(WORD nTimebase, int nMeter);
 		void	Log() const;
 	};
@@ -81,7 +86,7 @@ public:
 	void	ReadMidiFile(LPCTSTR pszMidiFilePath);
 	void	RemoveOverlaps();
 	void	LogEvents() const;
-	void	DumpEvents(LPCTSTR pszPath, int nVelocityOverride = 0) const;
+	void	DumpEvents(LPCTSTR pszPath, int nVelocityOverride = 0, bool bUseStaves = false) const;
 	void	WriteLily(LPCTSTR pszLilyFilePath);
 	void	VerifyLilyMidi(LPCTSTR pszLilyMidiFilePath);
 
@@ -171,6 +176,7 @@ protected:
 	void	FormatMeasure(CString& sMeasure, const CItemArray& arrMeasure, bool bPrevMeasureTied);
 	void	WriteTrack(CStdioFile& fLily, int iTrack);
 	void	WriteBookHeader(CStdioFile& fLily);
+	void	WriteScoreHeader(CStdioFile& fLily);
 	void	WriteTrackHeader(CStdioFile& fLily, int iTrack);
 	CString	GetClefString(int iTrack) const;
 };

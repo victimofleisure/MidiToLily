@@ -8,6 +8,7 @@
 		revision history:
 		rev		date	comments
         00		08dec23	initial version
+		01		27dec24	add subtitle, opus, piece and staves params
  
 */
 
@@ -15,6 +16,9 @@
 
 PARAMDEF(output)    // The path of the output LilyPond file.
 PARAMDEF(title)     // The title of the composition.
+PARAMDEF(subtitle)	// The subtitle of the composition.
+PARAMDEF(opus)		// The title of the opus.
+PARAMDEF(piece)		// The title of the piece.
 PARAMDEF(composer)  // The name of the composer.
 PARAMDEF(copyright) // The copyright notice.
 PARAMDEF(frenched)  // Hide empty staves.
@@ -38,6 +42,8 @@ PARAMDEF(ottava)    // Comma-separated list of octave shifts, each consisting of
                     // t_M:B:T=n where t is a track index, M:B:T is a time in
                     // Measure:Beat:Tick format, and n is a signed number of
                     // octaves to transpose the staff by.
+PARAMDEF(staves)	// Comma-separated list of track indices specifying which
+					// tracks are assigned to staves, from top to bottom
 PARAMDEF(help)      // Display the help.
 PARAMDEF(license)   // Display the license.
 PARAMDEF(logging)   // Enables various types of logging; specify * to enable all
@@ -52,6 +58,7 @@ HELPEXAMPLEDEF(QUANT)
 HELPEXAMPLEDEF(SECTION)
 HELPEXAMPLEDEF(CLEF)
 HELPEXAMPLEDEF(OTTAVA)
+HELPEXAMPLEDEF(STAVES)
 					
 #undef HELPEXAMPLEDEF
 #endif
