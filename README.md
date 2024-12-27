@@ -53,7 +53,7 @@ Track indices are zero-based, but since the tempo map is track zero, the first t
 
 If your input MIDI file isn't quantized, use the quant and triplet parameters, otherwise you'll get errors, such as invalid duration.
 
-If your tracks aren't assigned to staves in the desired order, you can use the staves parameter to reorder them. The staves parameter can also be used to filter out specific tracks.
+If your tracks aren't assigned to staves in the desired order, you can use the staves parameter to reorder them. The staves parameter can also be used to filter out specific tracks. The default is sequential assignment from top to bottom, i.e. track one gets the top stave, and the last track gets the bottom stave.
 
 # Development
 
