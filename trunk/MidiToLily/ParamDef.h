@@ -9,6 +9,7 @@
 		rev		date	comments
         00		08dec23	initial version
 		01		27dec24	add subtitle, opus, piece and staves params
+		02		29dec24	add logging of note overlaps
  
 */
 
@@ -71,6 +72,7 @@ LOGGINGTYPEDEF(MIDI_MESSAGES)
 LOGGINGTYPEDEF(MEASURE_EVENTS)
 LOGGINGTYPEDEF(PRELIM_MEASURES)
 LOGGINGTYPEDEF(FINAL_MEASURES)
+LOGGINGTYPEDEF(NOTE_OVERLAPS)
 
 #undef LOGGINGTYPEDEF
 #endif

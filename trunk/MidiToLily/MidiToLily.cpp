@@ -9,6 +9,7 @@
 		rev		date	comments
         00		08dec23	initial version
 		01		27dec24	add subtitle, opus, piece and staves params
+		02		29dec24	add logging of note overlaps
  
 */
 
@@ -477,8 +478,14 @@ void CMidiToLily::RemoveOverlaps()
 			CMidiEvent&	evt = arrEvt[iEvent];
 			int	iNextEvent = iEvent + 1;
 			if (iNextEvent < nEvents) {
-				DWORD	nNextEvtTime = arrEvt[iNextEvent].m_dwTime;
+				CMidiEvent&	evtNext = arrEvt[iNextEvent];
+				DWORD	nNextEvtTime = evtNext.m_dwTime;
 				if (evt.m_dwTime + evt.m_nDur > nNextEvtTime) {
+					if (IsLogging()) {
+						_tprintf(_T("track %d: note %d dur %d at %d overlaps note %d dur %d at %d\n"), 
+							iTrack, MIDI_P1(evt.m_dwMsg), evt.m_nDur, evt.m_dwTime, 
+							MIDI_P1(evtNext.m_dwMsg), evtNext.m_nDur, evtNext.m_dwTime);
+					}
 					evt.m_nDur = nNextEvtTime - evt.m_dwTime;
 				}
 			}
