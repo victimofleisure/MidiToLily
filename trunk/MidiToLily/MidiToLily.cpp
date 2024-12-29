@@ -395,6 +395,11 @@ int CMidiToLily::GetQuantDuration(int nQuantDenom, int nWholeNoteDur)
 	return nQuantDur;
 }
 
+void CMidiToLily::LogEvent(const CMidiEvent& evt) const
+{
+	_tprintf(_T("%d %x %s %d\n"), evt.m_dwTime, evt.m_dwMsg, GetMidiName(evt.m_dwMsg), evt.m_nDur);
+}
+
 void CMidiToLily::LogEvents() const
 {
 	int	nTracks = m_arrTrack.GetSize();
@@ -402,8 +407,7 @@ void CMidiToLily::LogEvents() const
 		const CTrack&	track = m_arrTrack[iTrack];
 		int	nEvents = track.m_arrEvent.GetSize();
 		for (int iEvent = 0; iEvent < nEvents; iEvent++) {	// for each of input track's events
-			const CMidiEvent& evt = track.m_arrEvent[iEvent];
-			printf("%d %x %d\n", evt.m_dwTime, evt.m_dwMsg, evt.m_nDur);
+			LogEvent(track.m_arrEvent[iEvent]);
 		}
 	}
 }
@@ -482,9 +486,12 @@ void CMidiToLily::RemoveOverlaps()
 				DWORD	nNextEvtTime = evtNext.m_dwTime;
 				if (evt.m_dwTime + evt.m_nDur > nNextEvtTime) {
 					if (IsLogging()) {
-						_tprintf(_T("track %d: note %d dur %d at %d overlaps note %d dur %d at %d\n"), 
-							iTrack, MIDI_P1(evt.m_dwMsg), evt.m_nDur, evt.m_dwTime, 
-							MIDI_P1(evtNext.m_dwMsg), evtNext.m_nDur, evtNext.m_dwTime);
+						// if times and durations match, it will notate correctly as a chord, else log it
+						if (evt.m_dwTime != evtNext.m_dwTime || evt.m_nDur != evtNext.m_nDur) {
+							_tprintf(_T("track %d: %d %s %d overlaps %d %s %d\n"), iTrack, 
+								evt.m_dwTime, GetMidiName(evt.m_dwMsg), evt.m_nDur,
+								evtNext.m_dwTime, GetMidiName(evtNext.m_dwMsg), evtNext.m_nDur);
+						}
 					}
 					evt.m_nDur = nNextEvtTime - evt.m_dwTime;
 				}
@@ -805,6 +812,9 @@ void CMidiToLily::WriteTrack(CStdioFile& fLily, int iTrack)
 			}
 			const CMidiEvent& evt = arrEvent[iEvent];	// peek at next note
 			if (!evt.m_nDur) {
+				if (IsLogging(LOG_MEASURE_EVENTS)) {
+					LogEvent(evt);
+				}
 				arrNote.Add(MIDI_P1(evt.m_dwMsg));
 				iEvent++;	// increment past this note
 				continue;
@@ -834,7 +844,7 @@ void CMidiToLily::WriteTrack(CStdioFile& fLily, int iTrack)
 				item.m_bIsTied = true;	// make note tied
 			}
 			if (IsLogging(LOG_MEASURE_EVENTS)) {
-				_tprintf(_T("%d %x %d\n"), evt.m_dwTime, evt.m_dwMsg, evt.m_nDur);
+				LogEvent(evt);
 			}
 			arrItem.Add(item);	// add note to beat's item array
 			arrNote.RemoveAll();
@@ -870,6 +880,11 @@ CString	CMidiToLily::GetClefString(int iTrack) const
 	} else {
 		return m_arrTrack[iTrack].m_sClef;
 	}
+}
+
+CString	CMidiToLily::GetMidiName(DWORD dwMsg) const
+{
+	return CNote::GetMidiName(MIDI_P1(dwMsg), m_nKeySig);
 }
 
 void CMidiToLily::WriteTrackHeader(CStdioFile& fLily, int iTrack)

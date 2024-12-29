@@ -9,6 +9,7 @@
 		rev		date	comments
         00		08dec23	initial version
 		01		27dec24	add subtitle, opus, piece and staves params
+		02		29dec24	add logging of note overlaps
  
 */
 
@@ -166,6 +167,7 @@ protected:
 	static	CString	GetTrackVarName(int iTrack);
 	CString	FormatItem(const CItem& item, bool bPrevItemTied = false) const;
 	int		GetDuration(int nDur, int& nDots) const;
+	void	LogEvent(const CMidiEvent& evt) const;
 	void	LogNotes(int iTrack) const;
 	void	LogMeasure(const CItemArray& arrMeasure, bool bPrevMeasureTied) const;
 	bool	IsWholeMeasureRest(const CItemArray& arrMeasure) const;
@@ -179,6 +181,7 @@ protected:
 	void	WriteScoreHeader(CStdioFile& fLily);
 	void	WriteTrackHeader(CStdioFile& fLily, int iTrack);
 	CString	GetClefString(int iTrack) const;
+	CString	GetMidiName(DWORD dwMsg) const;
 };
 
 inline bool CMidiToLily::CParams::COttava::operator>(const COttava& ot) const

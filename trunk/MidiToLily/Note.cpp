@@ -8,6 +8,7 @@
 		revision history:
 		rev		date	comments
         00		08dec23	initial version
+		01		29dec24	add method for note name with octave
  
 */
 
@@ -66,6 +67,18 @@ LPCTSTR CNote::GetNoteName(int nNote, int nKey, int nTonality)
 	ASSERT(nTonality >= 0 && nTonality < TONALITIES);
 	int	iName = m_NoteNameTbl[nTonality][nKey][nNote];
 	return m_NoteNameStr[iName];
+}
+
+CString CNote::GetMidiName(int nNote, int nKey, int nTonality)
+{
+	ASSERT(nNote >= 0 && nNote < NOTES);
+	ASSERT(nKey >= 0 && nKey < NOTES);
+	ASSERT(nTonality >= 0 && nTonality < TONALITIES);
+	// per MIDI 1.0 specification, middle C == 60 == C4
+	CString	s;
+	int	iName = m_NoteNameTbl[nTonality][nKey][nNote % 12];
+	s.Format(_T("%s%d"), m_NoteNameStr[iName], nNote / 12 - 1);
+	return(s);
 }
 
 LPCTSTR CNote::GetLilyNoteName(int nNote, int nKey, int nTonality)

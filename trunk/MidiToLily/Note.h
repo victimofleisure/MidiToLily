@@ -8,6 +8,7 @@
 		revision history:
 		rev		date	comments
         00		08dec23	initial version
+		01		29dec24	add method for note name with octave
  
 */
 
@@ -28,6 +29,7 @@ public:
 		Fs = NOTES, Cs, Gs, Ds, As, Es, Bs, Ff, Cf, NOTE_NAMES
 	};
 	static LPCTSTR GetNoteName(int nNote, int nKey = 0, int nTonality = MAJOR);
+	static CString GetMidiName(int nNote, int nKey = 0, int nTonality = MAJOR);
 	static LPCTSTR GetLilyNoteName(int nNote, int nKey = 0, int nTonality = MAJOR);
 	static int Mod(int Val, int Modulo);
 
