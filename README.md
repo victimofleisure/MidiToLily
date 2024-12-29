@@ -65,7 +65,11 @@ MidiToLily.exe "my song.mid" /quant 16 /triplet 16 /verify
 
 # Development
 
-MidiToLily is written in C++ using MFC. It compiles cleanly in Visual Studio 2012 and 2019. MidiToLily does what I need it to do, but undoubtedly it could be improved.
+MidiToLily is written in C++ using MFC. It compiles cleanly in Visual Studio 2012 and 2019. MidiToLily does what I need it to do, but undoubtedly it could be improved. Enhancements I'm considering include:
+
+* Meter changes
+* Tempo changes
+* Better triplet handling; current implementation fails in various corner cases
 
 # Links
 
