@@ -28,7 +28,7 @@ Download the latest release, unzip it, and run MidiToLily.exe. MidiToLily doesn'
 |&#8209;triplet&nbsp;DURATION|Quantize note start and end times to the specified TRIPLET duration (1=whole, 2=half, 4=quarter, etc.); if combined with regular quantization, notes snap to the nearest grid.|
 |&#8209;offset&nbsp;OFFSET|Signed offset in ticks added to all MIDI event times.|
 |&#8209;clef&nbsp;LIST|Comma-separated list of clef overrides, each consisting of t=c, where t is a track index and c is a clef name defined in LilyPond. By default, a track is automatically assigned treble or bass clef, depending on what pitches it uses.|
-|&#8209;section&nbsp;LIST|Comma-separated list of measure numbers, each of which specifies the start of a section.|
+|&#8209;section&nbsp;LIST|Comma-separated list of one-based measure numbers, each of which specifies the start of a section.|
 |&#8209;ottava&nbsp;LIST|Comma-separated list of octave shifts, each consisting of t_M:B:T=n where t is a track index, M:B:T is a time in Measure:Beat:Tick format, and n is a signed number of octaves to transpose the staff by.|
 |&#8209;staves&nbsp;LIST|Comma-separated list of track indices specifying which tracks are assigned to staves, from top to bottom.|
 |&#8209;help|Display the help.|
