@@ -73,8 +73,8 @@ MidiToLily is written in C++ using MFC. It compiles cleanly in Visual Studio 201
 
 # Links
 
-* [MidiToLily blog](https://miditolily.blogspot.com/)
 * [LilyPond](https://lilypond.org/)
+* [MidiToLily blog](https://miditolily.blogspot.com/)
 * [Chris Korda software](https://victimofleisure.github.io/software)
 * [Scores created using MidiToLily](https://victimofleisure.github.io/misc/scores.html)
 
