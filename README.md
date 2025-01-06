@@ -16,7 +16,7 @@ If that succeeds, create your score with this command:
 ```
 LilyPond "myfile [lily].ly"
 ```
-If your MIDI file is not fully quantized, or if MidiToLily fails, with an invalid duration error for example, try this instead:
+If your MIDI file is not fully quantized, or you get an error, try this instead:
 ```
 MidiToLily myfile.mid -quant 16 -triplet 16
 ```
