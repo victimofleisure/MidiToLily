@@ -8,6 +8,20 @@ MidiToLily is a console application that converts a MIDI file to LilyPond format
 
 Download the latest release, unzip it, and run MidiToLily.exe. MidiToLily doesn't have an installer, doesn't have dependencies, and doesn't store things in the registry or anywhere else.
 
+If your MIDI file is fully quantized, try the simplest possible command:
+```
+MidiToLily myfile.mid
+```
+If that succeeds, create your score with this command:
+```
+LilyPond "myfile [lily].ly"
+```
+If your MIDI file is not fully quantized, or if MidiToLily fails, with an invalid duration error for example, try this instead:
+```
+MidiToLily myfile.mid -quant 16 -triplet 16
+```
+If you're sure your file doesn't contain triplets, you can omit the triplet parameter. Depending on what your file contains, other quantization values may work better.
+
 # Command line
 
 ### Usage: MidiToLily MIDI_FILE [options]
@@ -31,6 +45,8 @@ Download the latest release, unzip it, and run MidiToLily.exe. MidiToLily doesn'
 |&#8209;section&nbsp;LIST|Comma-separated list of one-based measure numbers, each of which specifies the start of a section.|
 |&#8209;ottava&nbsp;LIST|Comma-separated list of octave shifts, each consisting of t_M:B:T=n where t is a track index, M:B:T is a time in Measure:Beat:Tick format, and n is a signed number of octaves to transpose the staff by.|
 |&#8209;staves&nbsp;LIST|Comma-separated list of track indices specifying which tracks are assigned to staves, from top to bottom.|
+|&#8209;time&nbsp;LIST|Comma-separated list of time signatures, each consisting of M=n/d where M is a one-based measure number, and n and d are the the time signature's numerator and denominator.|
+|&#8209;key&nbsp;LIST|Comma-separated list of key signatures, each consisting of M=k where M is a one-based measure number, and k is the key signature in LilyPond note format, optionally followed by the letter 'm' to indicate a minor key.|
 |&#8209;help|Display the help.|
 |&#8209;license|Display the license.|
 |&#8209;logging&nbsp;TYPE|Enables various types of logging; specify a bitmask in hexadecimal, ? to list the types, or * to enable all.|
@@ -44,6 +60,8 @@ Download the latest release, unzip it, and run MidiToLily.exe. MidiToLily doesn'
 |&#8209;clef&nbsp;1=C,2=C|Use alto clef for tracks 1 and 2.|
 |&#8209;ottava&nbsp;1_5:3:0=2|Shift track 1 up two octaves starting at MBT time 5:3:0. The longer example 1_5:3:0=2,1_8:1:45=0 also restores the same track to its unshifted state at 8:1:45.|
 |&#8209;staves&nbsp;3,1,2|Assign track 3 to the top staff, track 1 to the middle staff, and track 2 to the bottom staff.|
+|&#8209;time&nbsp;1=3/4,9=4/4|Set the time signature to 3/4 at measure 1, and then change it to 4/4 at measure 9.|
+|&#8209;key&nbsp;1=ef,9=csm|Set the key signature to E flat major at measure 1, and then change it to C sharp minor at measure 9.|
 
 # Tips
 
