@@ -20,7 +20,7 @@ If your MIDI file is not fully quantized, or you get an error, try this instead:
 ```
 MidiToLily myfile.mid -quant 16 -triplet 16
 ```
-If you're sure your file doesn't contain triplets, you can omit the triplet parameter. Depending on what your file contains, other quantization values may work better.
+If you're sure your file doesn't contain triplets, you can omit the triplet parameter. Depending on your file, other quantization values may work better.
 
 # Command line
 
