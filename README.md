@@ -14,7 +14,7 @@ MidiToLily mysong.mid
 ```
 If that succeeds, create your score with this command:
 ```
-LilyPond "mysong [lily].ly"
+lilypond "mysong [lily].ly"
 ```
 If your MIDI file is not fully quantized, or you get an error, try this instead:
 ```
@@ -76,9 +76,9 @@ If your tracks aren't shown in the desired order, you can use the staves paramet
 Here's an example of MIDI verification, by running MidiToLily again after LilyPond runs. For the verify pass, cosmetic parameters like title and composer can be omitted.
 
 ```
-MidiToLily.exe mysong.mid /quant 16 /triplet 16 /title "My Song" /composer "My Name"
-lilypond.exe "mysong [lily].ly"
-MidiToLily.exe mysong.mid /quant 16 /triplet 16 /verify
+MidiToLily mysong.mid /quant 16 /triplet 16 /title "My Song" /composer "My Name"
+lilypond "mysong [lily].ly"
+MidiToLily mysong.mid /quant 16 /triplet 16 /verify
 ```
 
 # Development
