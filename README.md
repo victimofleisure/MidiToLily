@@ -10,15 +10,15 @@ Download the latest release, unzip it, and run MidiToLily.exe. MidiToLily doesn'
 
 If your MIDI file is fully quantized, try this simple command:
 ```
-MidiToLily myfile.mid
+MidiToLily mysong.mid
 ```
 If that succeeds, create your score with this command:
 ```
-LilyPond "myfile [lily].ly"
+LilyPond "mysong [lily].ly"
 ```
 If your MIDI file is not fully quantized, or you get an error, try this instead:
 ```
-MidiToLily myfile.mid -quant 16 -triplet 16
+MidiToLily mysong.mid -quant 16 -triplet 16
 ```
 If you're sure your file doesn't contain triplets, you can omit the triplet parameter. Depending on your file, other quantization values may work better.
 
@@ -73,12 +73,12 @@ If your input MIDI file isn't quantized, use the quant and triplet parameters, o
 
 If your tracks aren't shown in the desired order, you can use the staves parameter to reorder them. The staves parameter can also be used to hide specific tracks. The default behavior is tracks are assigned sequentially from top to bottom, i.e. track one gets the top stave, and the last track gets the bottom stave.
 
-Here's an example of MIDI verification, by running MidiToLily again after LilyPond runs. For the verify pass, cosmetic parameters like title or composer can be omitted.
+Here's an example of MIDI verification, by running MidiToLily again after LilyPond runs. For the verify pass, cosmetic parameters like title and composer can be omitted.
 
 ```
-MidiToLily.exe "my song.mid" /quant 16 /triplet 16 /title "My Song" /composer "My Name"
-lilypond.exe -dno-point-and-click "my song [lily].ly"
-MidiToLily.exe "my song.mid" /quant 16 /triplet 16 /verify
+MidiToLily.exe mysong.mid /quant 16 /triplet 16 /title "My Song" /composer "My Name"
+lilypond.exe "mysong [lily].ly"
+MidiToLily.exe mysong.mid /quant 16 /triplet 16 /verify
 ```
 
 # Development
