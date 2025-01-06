@@ -8,7 +8,7 @@ MidiToLily is a console application that converts a MIDI file to LilyPond format
 
 Download the latest release, unzip it, and run MidiToLily.exe. MidiToLily doesn't have an installer, doesn't have dependencies, and doesn't store things in the registry or anywhere else.
 
-If your MIDI file is fully quantized, try the simplest possible command:
+If your MIDI file is fully quantized, try this simple command:
 ```
 MidiToLily myfile.mid
 ```
