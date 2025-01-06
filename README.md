@@ -73,7 +73,7 @@ If your input MIDI file isn't quantized, use the quant and triplet parameters, o
 
 If your tracks aren't shown in the desired order, you can use the staves parameter to reorder them. The staves parameter can also be used to hide specific tracks. The default behavior is tracks are assigned sequentially from top to bottom, i.e. track one gets the top stave, and the last track gets the bottom stave.
 
-Here's an example of MIDI verification, by running MidiToLily again after lilypond runs. For the verify pass, cosmetic parameters like title or composer can be omitted.
+Here's an example of MIDI verification, by running MidiToLily again after LilyPond runs. For the verify pass, cosmetic parameters like title or composer can be omitted.
 
 ```
 MidiToLily.exe "my song.mid" /quant 16 /triplet 16 /title "My Song" /composer "My Name"
