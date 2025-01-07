@@ -10,6 +10,7 @@
         00		08dec23	initial version
 		01		27dec24	add subtitle, opus, piece and staves params
 		02		29dec24	add logging of note overlaps
+		03		06jan25	add time and key signature params
  
 */
 
@@ -30,16 +31,116 @@
 
 CWinApp theApp;
 
+CString CMidiToLily::CMbtTime::FormatTime() const
+{
+	CString	sMidiTime;
+	sMidiTime.Format(_T("%d:%d:%d"), m_nMeasure, m_nBeat, m_nTick);
+	return sMidiTime;
+}
+
+CString	CMidiToLily::CTimeSig::Format() const
+{
+	CString	sTimeSig;
+	sTimeSig.Format(_T("%d/%d"), m_nNumer, m_nDenom);
+	return sTimeSig;
+}
+
+CString	CMidiToLily::CKeySig::Format() const
+{
+	static const LPCTSTR	pszTonality[2] = {
+		_T(""),
+		_T("m"),
+	};
+	CString	sKeySig(CNote::GetKeyName(m_nAccs, m_bIsMinor));
+	sKeySig += pszTonality[m_bIsMinor];
+	return sKeySig;
+}
+
+CString	CMidiToLily::CKeySig::FormatLily() const
+{
+	static const LPCTSTR	pszTonality[2] = {
+		_T(" \\major"),
+		_T(" \\minor"),
+	};
+	CString	sKeySig(CNote::GetLilyKeyName(m_nAccs, m_bIsMinor));
+	sKeySig += pszTonality[m_bIsMinor];
+	return sKeySig;
+}
+
+CMidiToLily::CParams::CParams()
+{
+	m_bFrenched = false;
+	m_bVerify = false;
+	m_nOffset = 0;
+	m_nQuantDenom = 0;
+	m_nTripletQuantDenom = 0;
+	m_nLoggingMask = 0;
+}
+
+void CMidiToLily::CParams::Log() const
+{
+	_tprintf(_T("parameters:\n"));
+	_tprintf(_T("Output = \"%s\"\n"), m_sOutput.GetString());
+	_tprintf(_T("Title = \"%s\"\n"), m_sTitle.GetString());
+	_tprintf(_T("Subtitle = \"%s\"\n"), m_sSubtitle.GetString());
+	_tprintf(_T("Opus = \"%s\"\n"), m_sOpus.GetString());
+	_tprintf(_T("Piece = \"%s\"\n"), m_sPiece.GetString());
+	_tprintf(_T("Composer = \"%s\"\n"), m_sComposer.GetString());
+	_tprintf(_T("Copyright = \"%s\"\n"), m_sCopyright.GetString());
+	_tprintf(_T("Frenched = %d\n"), m_bFrenched);
+	_tprintf(_T("Offset = %d\n"), m_nOffset);
+	_tprintf(_T("Quant = %d\n"), m_nQuantDenom);
+	_tprintf(_T("Triplet = %d\n"), m_nTripletQuantDenom);
+	_tprintf(_T("Sections = %d\n"), m_arrSection.GetSize());
+	for (int iSection = 0; iSection < m_arrSection.GetSize(); iSection++) {
+		_tprintf(_T("Section %d = %d\n"), iSection, m_arrSection[iSection]);
+	}
+	for (int iClef = 0; iClef < m_arrClef.GetSize(); iClef++) {
+		_tprintf(_T("Track %d clef = \"%s\"\n"), iClef, m_arrClef[iClef].GetString());
+	}
+	for (int iTrack = 0; iTrack < m_arrOttavaArray.GetSize(); iTrack++) {
+		const COttavaArray& arrOttava = m_arrOttavaArray[iTrack];
+		_tprintf(_T("Track %d Ottavas = %d\n"), iTrack, arrOttava.GetSize());
+		for (int iOttava = 0; iOttava < arrOttava.GetSize(); iOttava++) {
+			const COttava& ot = arrOttava[iOttava];
+			_tprintf(_T("Ottava %d = %s %d\n"), iOttava, 
+				ot.FormatTime().GetString(), ot.m_nShift);
+		}
+	}
+	_tprintf(_T("Staves = %d\n"), m_arrStave.GetSize());
+	for (int iStave = 0; iStave < m_arrStave.GetSize(); iStave++) {
+		_tprintf(_T("Stave %d track = %d\n"), iStave, m_arrStave[iStave]);
+	}
+	_tprintf(_T("TimeSigs = %d\n"), m_arrTimeSig.GetSize());
+	for (int iTimeSig = 0; iTimeSig < m_arrTimeSig.GetSize(); iTimeSig++) {
+		const CTimeSigChange&	tsc = m_arrTimeSig[iTimeSig];
+		_tprintf(_T("TimeSig %d = %d %s\n"), iTimeSig, 
+			tsc.m_nMeasure, tsc.Format().GetString());
+	}
+	_tprintf(_T("KeySigs = %d\n"), m_arrKeySig.GetSize());
+	for (int iKeySig = 0; iKeySig < m_arrKeySig.GetSize(); iKeySig++) {
+		const CKeySigChange&	ksc = m_arrKeySig[iKeySig];
+		_tprintf(_T("KeySig %d = %d %s\n"), iKeySig, 
+			ksc.m_nMeasure, ksc.Format().GetString());
+	}
+}
+
+void CMidiToLily::CParams::Finalize()
+{
+	m_arrSection.Sort();	// sort sections in ascending order by bar number
+	int	nTracks = m_arrOttavaArray.GetSize();
+	for (int iTrack = 0; iTrack < nTracks; iTrack++) {	// for each track
+		m_arrOttavaArray[iTrack].Sort();	// sort ottavas in ascending order by time in ticks
+	}
+	m_arrTimeSig.Sort();	// sort time signatures in ascending order by measure number
+	m_arrKeySig.Sort();		// sort key signatures in ascending order by measure number
+}
+
 BOOL CMidiToLily::CMyException::GetErrorMessage(LPTSTR lpszError, UINT nMaxError, PUINT pnHelpContext) const
 {
 	UNREFERENCED_PARAMETER(pnHelpContext);
 	_tcsncpy_s(lpszError, nMaxError, m_sErrMsg.GetString(), m_sErrMsg.GetLength());
 	return TRUE;
-}
-
-void CMidiToLily::OnError(CString sErrMsg)
-{
-	THROW(new CMyException(sErrMsg));
 }
 
 inline void CMidiToLily::CItem::Reset()
@@ -82,73 +183,6 @@ inline CMidiToLily::CTrack::CTrack()
 {
 }
 
-CMidiToLily::CParams::CParams()
-{
-	m_bFrenched = false;
-	m_bVerify = false;
-	m_nOffset = 0;
-	m_nQuantDenom = 0;
-	m_nTripletQuantDenom = 0;
-	m_nLoggingMask = 0;
-}
-
-void CMidiToLily::CParams::Log() const
-{
-	_tprintf(_T("parameters:\n"));
-	_tprintf(_T("Output = \"%s\"\n"), m_sOutput.GetString());
-	_tprintf(_T("Title = \"%s\"\n"), m_sTitle.GetString());
-	_tprintf(_T("Subtitle = \"%s\"\n"), m_sSubtitle.GetString());
-	_tprintf(_T("Opus = \"%s\"\n"), m_sOpus.GetString());
-	_tprintf(_T("Piece = \"%s\"\n"), m_sPiece.GetString());
-	_tprintf(_T("Composer = \"%s\"\n"), m_sComposer.GetString());
-	_tprintf(_T("Copyright = \"%s\"\n"), m_sCopyright.GetString());
-	_tprintf(_T("Frenched = %d\n"), m_bFrenched);
-	_tprintf(_T("Offset = %d\n"), m_nOffset);
-	_tprintf(_T("Quant = %d\n"), m_nQuantDenom);
-	_tprintf(_T("Triplet = %d\n"), m_nTripletQuantDenom);
-	_tprintf(_T("Sections = %d\n"), m_arrSection.GetSize());
-	for (int iSection = 0; iSection < m_arrSection.GetSize(); iSection++) {
-		_tprintf(_T("Section %d = %d\n"), iSection, m_arrSection[iSection] + 1);
-	}
-	for (int iClef = 0; iClef < m_arrClef.GetSize(); iClef++) {
-		_tprintf(_T("Track %d clef = \"%s\"\n"), iClef, m_arrClef[iClef].GetString());
-	}
-	for (int iTrack = 0; iTrack < m_arrOttavaArray.GetSize(); iTrack++) {
-		const COttavaArray& arrOttava = m_arrOttavaArray[iTrack];
-		_tprintf(_T("Track %d Ottavas = %d\n"), iTrack, arrOttava.GetSize());
-		for (int iOttava = 0; iOttava < arrOttava.GetSize(); iOttava++) {
-			const COttava& ot = arrOttava[iOttava];
-			_tprintf(_T("Ottava %d = %d %d\n"), iOttava, ot.m_nTick, ot.m_nShift);
-		}
-	}
-	for (int iStave = 0; iStave < m_arrStave.GetSize(); iStave++) {
-		_tprintf(_T("Stave %d track = %d\n"), iStave, m_arrStave[iStave]);
-	}
-}
-
-void CMidiToLily::CParams::Finalize(WORD nTimebase, int nMeter)
-{
-	ASSERT(nTimebase);
-	ASSERT(nMeter);
-	m_arrSection.Sort();	// sort sections in ascending order by bar number
-	int	nTracks = m_arrOttavaArray.GetSize();
-	for (int iTrack = 0; iTrack < nTracks; iTrack++) {	// for each track
-		CParams::COttavaArray&	arrOttava = m_arrOttavaArray[iTrack];
-		int	nOttavas = arrOttava.GetSize();
-		for (int iOttava = 0; iOttava < nOttavas; iOttava++) {	// for each ottava
-			CParams::COttava&	ot = arrOttava[iOttava];
-			// convert MBT time to scalar time in ticks
-			ASSERT(ot.m_nMeasure > 0);	// meter is one-based
-			ASSERT(ot.m_nBeat > 0);		// beat is one-based
-			ASSERT(ot.m_nTick >= 0);	// tick is zero-based
-			int	nTimeTicks = (ot.m_nMeasure - 1) * nTimebase * nMeter
-				+ (ot.m_nBeat - 1) * nTimebase + ot.m_nTick;
-			ot.m_nTick = nTimeTicks;	// overwrite m_nTick with time in ticks
-		}
-		arrOttava.Sort();	// sort ottavas in ascending order by time in ticks
-	}
-}
-
 const LPCTSTR CMidiToLily::m_arrClefName[CLEFS] = {
 	_T("F"),
 	_T("G"),
@@ -165,16 +199,31 @@ CMidiToLily::CMidiToLily()
 {
 	m_nTimebase = 0;
 	m_nTempo = 0;
-	m_nKeySig = 0;
-	m_nMeter = 0;
 	m_nEndTime = 0;
+	m_keySigInit = CKeySig(0, 0);
+	m_timeSigInit = CTimeSig(0, 0);
+	m_nQuantDur = 0;
+	m_nTripletQuantDur = 0;
+	ResetTrackData();
+}
+
+void CMidiToLily::ResetTrackData()
+{
+	m_keySig = m_keySigInit;
+	m_timeSig = m_timeSigInit;
+	m_nCurTime = 0;
 	m_iTrack = 0;
 	m_iMeasure = 0;
 	m_iBeat = 0;
 	m_iSection = 0;
 	m_iOttava = 0;
-	m_nQuantDur = 0;
-	m_nTripletQuantDur = 0;
+	m_iTimeSig = 0;
+	m_iKeySig = 0;
+}
+
+void CMidiToLily::OnError(CString sErrMsg)
+{
+	THROW(new CMyException(sErrMsg));
 }
 
 void CMidiToLily::SetParams(const CParams& params)
@@ -204,11 +253,12 @@ void CMidiToLily::ReadMidiFile(LPCTSTR pszMidiFilePath)
 	}
 	fMidi.ReadTracks(arrTrack, m_arrTrackName, m_nTimebase, &nTempo, &sigTime, &sigKey);
 	m_nTempo = Round(CMidiFile::MICROS_PER_MINUTE / double(nTempo));	// LilyPond tempo is integer
-	m_nKeySig = CNote::Mod(sigKey.SharpsOrFlats * 7, NOTES);
-	m_nMeter = sigTime.Numerator;
+	m_keySigInit = CKeySig(sigKey.SharpsOrFlats, sigKey.IsMinor != 0);
+	m_timeSigInit = CTimeSig(sigTime.Numerator, 1 << sigTime.Denominator);
 	if (IsLogging(LOG_MIDI_FILE_INFO)) {
-		_tprintf(_T("Tracks = %d\nTimebase = %d\nTempo = %d\nKeySig = %d\nMeter = %d\n"), 
-			arrTrack.GetSize(), m_nTimebase, m_nTempo, m_nKeySig, m_nMeter);
+		_tprintf(_T("Tracks = %d\nTimebase = %d\nTempo = %d\nKeySig = %s\nTimeSig = %s\n"), 
+			arrTrack.GetSize(), m_nTimebase, m_nTempo, 
+			m_keySigInit.Format().GetString(), m_timeSig.Format().GetString());
 	}
 	OnMidiFileRead(arrTrack);
 	int	nTracks = arrTrack.GetSize();
@@ -218,7 +268,7 @@ void CMidiToLily::ReadMidiFile(LPCTSTR pszMidiFilePath)
 		_tprintf(_T("input MIDI messages:\n"));
 	}
 	for (int iTrack = 0; iTrack < nTracks; iTrack++) {	// for each input track
-		PrepareMidiEvents(arrTrack[iTrack], iTrack);
+		PrepareMidiEvents(iTrack, arrTrack[iTrack]);
 		const CMidiEventArray&	arrEvent = m_arrTrack[iTrack].m_arrEvent;
 		int	nEvents = arrEvent.GetSize();
 		if (nEvents) {
@@ -239,7 +289,7 @@ inline int CMidiToLily::CalcQuantError(int nTime, int nQuant)
 	return (nTime + nQuant / 2) % nQuant - nQuant / 2;
 }
 
-void CMidiToLily::PrepareMidiEvents(const CMidiFile::CMidiEventArray& arrInEvent, int iTrack)
+void CMidiToLily::PrepareMidiEvents(int iTrack, const CMidiFile::CMidiEventArray& arrInEvent)
 {
 	CMidiEventArray& arrOutEvent = m_arrTrack[iTrack].m_arrEvent;
 	int	nEvents = arrInEvent.GetSize();
@@ -374,7 +424,7 @@ void CMidiToLily::OnMidiFileRead(CMidiFile::CMidiTrackArray& arrTrack)
 	m_nQuantDur = GetQuantDuration(m_params.m_nQuantDenom, nWholeNoteDur);
 	int	nTripletWholeNoteDur = Round(nWholeNoteDur * (2.0 / 3.0));	// scale whole note for triplets
 	m_nTripletQuantDur = GetQuantDuration(m_params.m_nTripletQuantDenom, nTripletWholeNoteDur); 
-	m_params.Finalize(m_nTimebase, m_nMeter);	// finalize parameters, a crucial last step
+	m_params.Finalize();	// finalize parameters, a crucial last step
 	if (IsLogging(LOG_PARAMETERS)) {
 		m_params.Log();
 	}
@@ -397,7 +447,7 @@ int CMidiToLily::GetQuantDuration(int nQuantDenom, int nWholeNoteDur)
 
 void CMidiToLily::LogEvent(const CMidiEvent& evt) const
 {
-	_tprintf(_T("%d %x %s %d\n"), evt.m_dwTime, evt.m_dwMsg, GetMidiName(evt.m_dwMsg), evt.m_nDur);
+	_tprintf(_T("%d %x %s %d\n"), evt.m_dwTime, evt.m_dwMsg, GetMidiName(evt.m_dwMsg).GetString(), evt.m_nDur);
 }
 
 void CMidiToLily::LogEvents() const
@@ -470,7 +520,7 @@ void CMidiToLily::DumpEvents(LPCTSTR pszPath, int nVelocityOverride, bool bUseSt
 
 void CMidiToLily::RemoveOverlaps()
 {
-	if (IsLogging()) {
+	if (IsLogging(LOG_NOTE_OVERLAPS)) {
 		_tprintf(_T("removing note overlaps\n"));
 	}
 	int	nTracks = m_arrTrack.GetSize();
@@ -485,12 +535,12 @@ void CMidiToLily::RemoveOverlaps()
 				CMidiEvent&	evtNext = arrEvt[iNextEvent];
 				DWORD	nNextEvtTime = evtNext.m_dwTime;
 				if (evt.m_dwTime + evt.m_nDur > nNextEvtTime) {
-					if (IsLogging()) {
+					if (IsLogging(LOG_NOTE_OVERLAPS)) {
 						// if times and durations match, it will notate correctly as a chord, else log it
 						if (evt.m_dwTime != evtNext.m_dwTime || evt.m_nDur != evtNext.m_nDur) {
 							_tprintf(_T("track %d: %d %s %d overlaps %d %s %d\n"), iTrack, 
-								evt.m_dwTime, GetMidiName(evt.m_dwMsg), evt.m_nDur,
-								evtNext.m_dwTime, GetMidiName(evtNext.m_dwMsg), evtNext.m_nDur);
+								evt.m_dwTime, GetMidiName(evt.m_dwMsg).GetString(), evt.m_nDur,
+								evtNext.m_dwTime, GetMidiName(evtNext.m_dwMsg).GetString(), evtNext.m_nDur);
 						}
 					}
 					evt.m_nDur = nNextEvtTime - evt.m_dwTime;
@@ -523,11 +573,17 @@ CString	CMidiToLily::FormatItem(const CItem& item, bool bPrevItemTied) const
 			if (nNotes > 1) {
 				sItem = '<';
 			}
-			for (int iNote = 0; iNote < nNotes; iNote++) {
+			for (int iNote = 0; iNote < nNotes; iNote++) {	// for each of item's notes
 				int	nNote = item.m_arrNote[iNote];
 				ASSERT(nNote < MIDI_NOTES);
 				int	nOctave = nNote / OCTAVE - 4;	// account for middle C
 				int	nNoteNorm = nNote % OCTAVE;
+				int	iNoteName = CNote::GetNoteNameIdx(nNoteNorm, m_keySig.m_nAccs, m_keySig.m_bIsMinor);
+				CString	sNote(CNote::GetLilyNoteNameByIdx(iNoteName));
+				if (iNoteName == CNote::Cb)	// if C flat
+					nOctave++;	// octave up
+				else if (iNoteName == CNote::Bs)	// if B sharp
+					nOctave--;	// octave down
 				CString	sOctave;
 				TCHAR	cOctave;
 				if (nOctave > 0) {
@@ -541,7 +597,7 @@ CString	CMidiToLily::FormatItem(const CItem& item, bool bPrevItemTied) const
 				}
 				if (iNote)
 					sItem += ' ';
-				sItem += CNote::GetLilyNoteName(nNoteNorm, m_nKeySig) + sOctave;
+				sItem += sNote + sOctave;
 			}
 			if (nNotes > 1) {
 				sItem += '>';
@@ -558,29 +614,31 @@ CString	CMidiToLily::FormatItem(const CItem& item, bool bPrevItemTied) const
 	return sItem;
 }
 
-int CMidiToLily::GetDuration(int nDur, int& nDots) const
+bool CMidiToLily::GetLilyDuration(CItem& item, bool bNoThrow) const
 {
-	ASSERT(nDur);
-	nDots = 0;
-	int	nDiv = 0; 
+	ASSERT(item.m_nDur);
 	int	nWhole = m_nTimebase * 4;	// start with whole note
-	if (!(nWhole % nDur)) {	// if duration divides evenly
-		return nWhole / nDur;	// most likely case
+	if (!(nWhole % item.m_nDur)) {	// if duration divides evenly
+		item.m_nLilyDur = static_cast<WORD>(nWhole / item.m_nDur);	// most likely case
+		return true;
 	}
 	// duration not found above; try dotted values
 	const int nMaxDots = 2;	// maximum number of dots we allow
 	for (int iDot = 0; iDot <= nMaxDots; iDot++) {
 		int	nDotWhole = nWhole - (m_nTimebase >> iDot);
-		if (!(nDotWhole % nDur)) {	// if duration divides evenly
-			nDots = iDot + 1;
-			return nDiv = nDotWhole / nDur * 2;
+		if (!(nDotWhole % item.m_nDur)) {	// if duration divides evenly
+			item.m_nDots = static_cast<BYTE>(iDot + 1);
+			item.m_nLilyDur = static_cast<WORD>(nDotWhole / item.m_nDur * 2);
+			return true;
 		}
 	}
-	CString	sErrMsg;
-	sErrMsg.Format(IDS_ERR_BAD_DURATION, m_iTrack, m_iMeasure + 1, nDur);
-	OnError(sErrMsg);
-	ASSERT(0);	// zero duration is an error in LilyPond
-	return 0;	// duration not found; failure
+	if (!bNoThrow) {
+		CString	sErrMsg;
+		sErrMsg.Format(IDS_ERR_BAD_DURATION, m_iTrack, m_iMeasure + 1, item.m_nDur);
+		OnError(sErrMsg);
+		ASSERT(0);	// zero duration is an error in LilyPond
+	}
+	return false;
 }
 
 void CMidiToLily::LogMeasure(const CItemArray& arrMeasure, bool bPrevMeasureTied) const
@@ -639,19 +697,16 @@ void CMidiToLily::CalcDurations(CItemArray& arrMeasure) const
 	for (int iItem = 0; iItem < nItems; iItem++) {	// for each item in measure
 		CItem&	item = arrMeasure[iItem];
 		if (item.m_nDur) {
-			int	nDots;
-			int	nDur = GetDuration(item.m_nDur, nDots);
-			if (!(nDur % 3)) {	// if triplet duration
-				if (nDots) {
+			GetLilyDuration(item);
+			if (!(item.m_nLilyDur % 3)) {	// if triplet duration
+				if (item.m_nDots) {
 					CString	sErrMsg;
 					sErrMsg.Format(IDS_ERR_DOT_WITHIN_TRIPLET, m_iTrack, m_iMeasure + 1);
 					OnError(sErrMsg);
 				}
-				nDur = Round(nDur * (2.0 / 3.0));
+				item.m_nLilyDur = static_cast<WORD>(Round(item.m_nLilyDur * (2.0 / 3.0)));
 				item.m_bIsTuplet = true;
 			}
-			item.m_nLilyDur = static_cast<WORD>(nDur);
-			item.m_nDots = static_cast<BYTE>(nDots);
 		}
 	}
 }
@@ -667,15 +722,13 @@ void CMidiToLily::ConsolidateItems(CItemArray& arrMeasure) const
 			int	nTiedDur = GetTiedDuration(arrMeasure, iItem);
 			// if item can be consolidated, and its new duration is on a suitable boundary
 			if (nTiedDur > item.m_nDur && (!(nPos % nTiedDur) || nTiedDur == m_nTimebase * 2
-			|| (nTiedDur == m_nTimebase * 3 && m_nMeter == 4))) {
+			|| (nTiedDur == m_nTimebase * 3 && m_timeSig == CTimeSig(4, 4)))) {
 				int	nTiedItems = nTiedDur / item.m_nDur;
 				arrMeasure.RemoveAt(iItem, nTiedItems - 1);	// remove all but last item in group
 				item.m_nDur = nTiedDur;	// update duration
-				int	nDots;	// update LilyPond duration too
-				item.m_nLilyDur = static_cast<WORD>(GetDuration(item.m_nDur, nDots));
-				item.m_nDots = static_cast<BYTE>(nDots);
+				GetLilyDuration(item);
 			} else {	// didn't consolidate
-				if (m_nMeter == 4) {	// apply this correction to 4/4 only
+				if (m_timeSig == CTimeSig(4, 4)) {	// apply this correction to 4/4 only
 					if (iItem < arrMeasure.GetSize() - 1) {	// if not on last item
 						CItem&	itemNext = arrMeasure[iItem + 1];
 						if (item.m_arrNote == itemNext.m_arrNote) {	// if notes match
@@ -686,9 +739,7 @@ void CMidiToLily::ConsolidateItems(CItemArray& arrMeasure) const
 							|| (item.m_nDur == d8 && itemNext.m_nDur == d4 && (nPos + d8 == d4 || nPos + d8 == d4 * 3))) {
 								arrMeasure.RemoveAt(iItem);
 								item.m_nDur = d4 + d8;	// replace pair with dotted quarter
-								int	nDots;	// update LilyPond duration too
-								item.m_nLilyDur = static_cast<WORD>(GetDuration(item.m_nDur, nDots));
-								item.m_nDots = static_cast<BYTE>(nDots);
+								GetLilyDuration(item);
 							}
 						}
 					}
@@ -706,12 +757,22 @@ void CMidiToLily::AddScheduledItems(CString& sMeasure, int nTime)
 	int	nOttavaTracks = m_params.m_arrOttavaArray.GetSize();
 	if (iTrack < nOttavaTracks) {	// if track within ottava track range
 		const CParams::COttavaArray&	arrOttava = m_params.m_arrOttavaArray[iTrack];
-		// if ottava index is within track's ottava array and ottava is due
-		if (m_iOttava < arrOttava.GetSize() && nTime >= arrOttava[m_iOttava].m_nTick) {
-			CString	sOttava;
-			sOttava.Format(_T("%d"), arrOttava[m_iOttava].m_nShift);
-			sMeasure += _T("\\ottava #") + sOttava + ' ';
-			m_iOttava++;
+		if (m_iOttava < arrOttava.GetSize()) {	// if ottava index is within track's ottava array
+			const CParams::COttava&	ot = arrOttava[m_iOttava];
+			if (m_iMeasure >= ot.m_nMeasure - 1) {	// if ottava's measure is due
+				// compute ottava's time in ticks relative to start of measure
+				int	nOttavaTime = (ot.m_nBeat - 1) * m_nTimebase + ot.m_nTick;
+				if (nTime >= nOttavaTime) {	// if ottava's beat and tick are also due
+					CString	sOttava;
+					sOttava.Format(_T("%d"), ot.m_nShift);
+					sMeasure += _T("\\ottava #") + sOttava + ' ';
+					if (IsLogging(LOG_SCHEDULED_ITEMS)) {
+						_tprintf(_T("%s ottava %d\n"), 
+							ot.FormatTime().GetString(), ot.m_nShift);
+					}
+					m_iOttava++;
+				}
+			}
 		}
 	}
 }
@@ -719,16 +780,19 @@ void CMidiToLily::AddScheduledItems(CString& sMeasure, int nTime)
 void CMidiToLily::FormatMeasure(CString& sMeasure, const CItemArray& arrMeasure, bool bPrevMeasureTied)
 {
 	sMeasure = _T("  ");
-	if (m_iSection < m_params.m_arrSection.GetSize() && m_iMeasure >= m_params.m_arrSection[m_iSection]) {
+	if (m_iSection < m_params.m_arrSection.GetSize() && m_iMeasure >= m_params.m_arrSection[m_iSection] - 1) {
 		sMeasure += _T("\\section ");
+		if (IsLogging(LOG_SCHEDULED_ITEMS)) {
+			_tprintf(_T("%d: section\n"), m_params.m_arrSection[m_iSection]);	// one-based measure number
+		}
 		m_iSection++;
 	}
-	int	nTime = m_iMeasure * m_nMeter * m_nTimebase;
+	int	nTime = 0;
 	if (IsWholeMeasureRest(arrMeasure)) {	// if whole measure rest
 		AddScheduledItems(sMeasure, nTime);
 		CString	sBarMult;
-		if (m_nMeter != 4) {
-			sBarMult.Format(_T("*%d/4"), m_nMeter);
+		if (m_timeSig != CTimeSig(4, 4)) {
+			sBarMult = _T("*") + m_timeSig.Format();
 		}
 		sMeasure += _T("R1") + sBarMult;
 	} else {	// measure contains at least one note
@@ -765,31 +829,58 @@ void CMidiToLily::FormatMeasure(CString& sMeasure, const CItemArray& arrMeasure,
 	sMeasure += _T("|\n");
 }
 
+bool CMidiToLily::OnNewMeasure(CStdioFile& fLily)
+{
+	bool	bIsTimeChange = false;
+	if (m_iTimeSig < m_params.m_arrTimeSig.GetSize()) {	// if time signatures remain
+		const CParams::CTimeSigChange& tsc = m_params.m_arrTimeSig[m_iTimeSig];
+		if (m_iMeasure >= tsc.m_nMeasure - 1) {	// if next time change is due
+			const CTimeSig&	ts = tsc;	// upcast
+			m_timeSig = ts;	// update member var
+			m_iTimeSig++;	// bump index
+			CString	sTimeSig(tsc.Format());
+			fLily.WriteString(_T("  \\time ") + sTimeSig + '\n');
+			if (IsLogging(LOG_SCHEDULED_ITEMS)) {
+				_tprintf(_T("%d: time %s\n"), tsc.m_nMeasure, sTimeSig.GetString());
+			}
+			bIsTimeChange = true;
+		}
+	}
+	if (m_iKeySig < m_params.m_arrKeySig.GetSize()) {	// if key signatures remain
+		const CParams::CKeySigChange& ksc = m_params.m_arrKeySig[m_iKeySig];
+		if (m_iMeasure >= ksc.m_nMeasure - 1) {	// if next key change is due
+			const CKeySig&	ks = ksc;	// upcast
+			m_keySig = ks;	// update member var
+			m_iKeySig++;	// bump index
+			fLily.WriteString(_T("  \\key ") + ksc.FormatLily() + '\n');
+			if (IsLogging(LOG_SCHEDULED_ITEMS)) {
+				_tprintf(_T("%d: key %s\n"), ksc.m_nMeasure, ksc.Format().GetString());
+			}
+		}
+	}
+	return bIsTimeChange;
+}
+
 void CMidiToLily::WriteTrack(CStdioFile& fLily, int iTrack)
 {
 	if (IsLogging(LOG_MEASURE_EVENTS)) {
 		_tprintf(_T("track %d\n"), iTrack);
 	}
-	m_iSection = 0;	// reset section index
-	m_iOttava = 0;	// reset ottava index
 	CItem	itemRemain;	// remaining portion of subdivided item
 	CItemArray	arrMeasure;	// array of items for an entire measure
 	bool	bPrevMeasureTied = false;	// true if previous measure's last note was tied
 	const CMidiEventArray& arrEvent = m_arrTrack[iTrack].m_arrEvent;
 	int	nEvents = arrEvent.GetSize();
 	int	iEvent = 0;	// index of current event
-	int	iBeat = 0;	// index of current beat
-	int	iMeasure = 0;	// index of current measure
-	int	nMeasureDur = m_nTimebase * m_nMeter;
-	int	nMeasures = (m_nEndTime - 1) / nMeasureDur + 1;
+	OnNewMeasure(fLily);
 	CNoteArray	arrNote;
 	CString	sMeasure;
-	while (iMeasure < nMeasures) {	// while measures remain
+	int	nBeatLen = m_nTimebase * 4 / m_timeSig.m_nDenom;
+	while (m_nCurTime < m_nEndTime) {	// while measures remain
 		int	nBeatDur = 0;	// accumulated duration of beat, in ticks
-		m_iMeasure = iMeasure;	// for error reporting
 		CItemArray	arrItem;	// beat starts with empty item array
 		if (itemRemain.m_nDur > 0) {	// if duration remaining from previous beat
-			int	nItemDur = min(itemRemain.m_nDur, m_nTimebase);
+			int	nItemDur = min(itemRemain.m_nDur, nBeatLen);
 			CItem	item(nItemDur, itemRemain.m_arrNote);
 			itemRemain.m_nDur -= nItemDur;	// subtract item duration from duration remaining
 			// if duration still remaining and item isn't a rest
@@ -801,13 +892,13 @@ void CMidiToLily::WriteTrack(CStdioFile& fLily, int iTrack)
 			arrItem.Add(item);	// add item to beat's item array
 			nBeatDur += nItemDur;	// add item duration to beat duration
 		}
-		int	nBeatStartTime = iBeat * m_nTimebase;	// start of this beat in absolute ticks
-		while (nBeatDur < m_nTimebase) {	// while beat isn't full
+		int	nBeatStartTime = m_nCurTime + m_iBeat * nBeatLen;	// start of this beat in absolute ticks
+		while (nBeatDur < nBeatLen) {	// while beat isn't full
 			if (iEvent >= nEvents) {	// if no more events
-				int	nRemainingBeatDur = m_nTimebase - nBeatDur;	// remaining beat duration
-				CItem	item(nRemainingBeatDur);
+				int	nBeatRemain = nBeatLen - nBeatDur;	// remaining beat duration
+				CItem	item(nBeatRemain);
 				arrItem.Add(item);	// add trailing rest to beat's item array
-				nBeatDur += nRemainingBeatDur;	// fill out beat duration
+				nBeatDur += nBeatRemain;	// fill out beat duration
 				break;
 			}
 			const CMidiEvent& evt = arrEvent[iEvent];	// peek at next note
@@ -820,11 +911,11 @@ void CMidiToLily::WriteTrack(CStdioFile& fLily, int iTrack)
 				continue;
 			}
 			int	nEvtStartTime = evt.m_dwTime - nBeatStartTime;	// make time beat-relative
-			if (nEvtStartTime >= m_nTimebase) {	// if note starts after this beat
-				int	nRemainingBeatDur = m_nTimebase - nBeatDur;	// remaining beat duration
-				CItem	item(nRemainingBeatDur);
+			if (nEvtStartTime >= nBeatLen) {	// if note starts after this beat
+				int	nBeatRemain = nBeatLen - nBeatDur;	// remaining beat duration
+				CItem	item(nBeatRemain);
 				arrItem.Add(item);	// add intermediate rest to beat's item array
-				nBeatDur += nRemainingBeatDur;	// fill out beat duration
+				nBeatDur += nBeatRemain;	// fill out beat duration
 				break;
 			}
 			iEvent++;	// increment past this note
@@ -833,9 +924,9 @@ void CMidiToLily::WriteTrack(CStdioFile& fLily, int iTrack)
 				arrItem.Add(item);	// add pre-note rest to beat's item array
 				nBeatDur += item.m_nDur;	// add item duration to beat duration
 			}
-			int	nRemainingBeatDur = m_nTimebase - nBeatDur;	// remaining beat duration
+			int	nBeatRemain = nBeatLen - nBeatDur;	// remaining beat duration
 			// compute portion of note duration that fits within remaining beat duration
-			int	nItemDur = min(evt.m_nDur, nRemainingBeatDur);
+			int	nItemDur = min(evt.m_nDur, nBeatRemain);
 			arrNote.Add(MIDI_P1(evt.m_dwMsg));
 			CItem	item(nItemDur, arrNote);
 			if (nItemDur < evt.m_nDur) {	// if entire note duration didn't fit
@@ -850,12 +941,10 @@ void CMidiToLily::WriteTrack(CStdioFile& fLily, int iTrack)
 			arrNote.RemoveAll();
 			nBeatDur += nItemDur;	// add item duration to beat duration
 		}
-		ASSERT(nBeatDur == m_nTimebase);	// beat should be exactly full, else logic error
+		ASSERT(nBeatDur == nBeatLen);	// beat should be exactly full, else logic error
 		arrMeasure.Append(arrItem);	// add item array to measure
-		iBeat++;	// increment beat count
-		int	nModBeat = iBeat % m_nMeter;
-		m_iBeat = nModBeat;	// for error reporting
-		if (!nModBeat) {	// if on measure boundary
+		m_iBeat++;	// increment beat count
+		if (m_iBeat >= m_timeSig.m_nNumer) {	// if measure is full
 			CalcDurations(arrMeasure);
 			if (IsLogging(LOG_PRELIM_MEASURES)) {
 				LogMeasure(arrMeasure, bPrevMeasureTied);
@@ -863,12 +952,18 @@ void CMidiToLily::WriteTrack(CStdioFile& fLily, int iTrack)
 			ConsolidateItems(arrMeasure);
 			FormatMeasure(sMeasure, arrMeasure, bPrevMeasureTied);
 			if (IsLogging(LOG_FINAL_MEASURES)) {
-				_fputts(sMeasure.GetString(), stdout);
+				_tprintf(_T("%d: %s"), m_iMeasure + 1, sMeasure.GetString());
 			}
 			fLily.WriteString(sMeasure);
 			bPrevMeasureTied = arrMeasure[arrMeasure.GetSize() - 1].m_bIsTied;
 			arrMeasure.FastRemoveAll();
-			iMeasure++;
+			m_nCurTime += nBeatLen * m_timeSig.m_nNumer;
+			m_iMeasure++;
+			m_iBeat = 0;
+			bool	bIsTimeChange = OnNewMeasure(fLily);
+			if (bIsTimeChange) {
+				nBeatLen = m_nTimebase * 4 / m_timeSig.m_nDenom;
+			}
 		}
 	}
 }
@@ -884,22 +979,20 @@ CString	CMidiToLily::GetClefString(int iTrack) const
 
 CString	CMidiToLily::GetMidiName(DWORD dwMsg) const
 {
-	return CNote::GetMidiName(MIDI_P1(dwMsg), m_nKeySig);
+	return CNote::GetMidiName(MIDI_P1(dwMsg), m_keySig.m_nAccs, m_keySig.m_bIsMinor);
 }
 
 void CMidiToLily::WriteTrackHeader(CStdioFile& fLily, int iTrack)
 {
-	CString	sTimeSig;
-	sTimeSig.Format(_T("%d/4"), m_nMeter);
-	CString	sKeySig(CNote::GetLilyNoteName(m_nKeySig));
-	sKeySig += _T(" \\major");
 	CString	sTempo;
 	sTempo.Format(_T("4 = %d"), m_nTempo);
 	CString	sClef(GetClefString(iTrack));
 	CString	sHeader;
 	sHeader = GetTrackVarName(iTrack) + _T(" = \\absolute {\n");	// absolute pitch
-	sHeader += _T("  \\key ") + sKeySig + '\n';
-	sHeader += _T("  \\time ") + sTimeSig + '\n';
+	if (!m_params.m_arrKeySig.GetSize() || m_params.m_arrKeySig[0].m_nMeasure > 1)
+		sHeader += _T("  \\key ") + m_keySigInit.FormatLily() + '\n';
+	if (!m_params.m_arrTimeSig.GetSize() || m_params.m_arrTimeSig[0].m_nMeasure > 1)
+		sHeader += _T("  \\time ") + m_timeSigInit.Format() + '\n';
 	sHeader += _T("  \\tempo ") + sTempo + '\n';
 	sHeader += _T("  \\clef \"") + sClef + _T("\"\n");
 	fLily.WriteString(sHeader);
@@ -948,6 +1041,7 @@ void CMidiToLily::WriteLily(LPCTSTR pszOutputFilePath)
 	WriteBookHeader(fLily);
 	int	nTracks = m_arrTrack.GetSize();
 	for (int iTrack = 1; iTrack < nTracks; iTrack++) {	// for each track
+		ResetTrackData();	// do first; order matters
 		m_iTrack = iTrack;	// for error reporting
 //		DumpNotes(iTrack);
 		WriteTrackHeader(fLily, iTrack);
@@ -1071,7 +1165,7 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 			return 0;
 		}
 		if (argc < 2) {	// if not enough arguments
-//			parser.WriteHelpMarkdown(_T("help.txt"));
+//			parser.WriteHelpMarkdown(_T("help.txt"));	// uncomment to write GitHub ReadMe
 			parser.ShowHelp();	// show help and exit
 			return 0;
 		}

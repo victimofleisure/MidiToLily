@@ -10,7 +10,8 @@
         00		08dec23	initial version
 		01		27dec24	add subtitle, opus, piece and staves params
 		02		29dec24	add logging of note overlaps
- 
+		03		06jan25	add time and key signature params
+
 */
 
 #ifdef PARAMDEF
@@ -45,6 +46,13 @@ PARAMDEF(ottava)    // Comma-separated list of octave shifts, each consisting of
                     // octaves to transpose the staff by.
 PARAMDEF(staves)	// Comma-separated list of track indices specifying which
 					// tracks are assigned to staves, from top to bottom
+PARAMDEF(time)		// Comma-separated list of time signatures, each consisting of
+					// M=n/d where M is a one-based measure number, and n and d
+					// are the the time signature's numerator and denominator
+PARAMDEF(key)		// Comma-separated list of key signatures, each consisting of
+					// M=k where M is a one-based measure number, and k is the
+					// key signature in LilyPond note format, optionally followed
+					// by the letter 'm' to indicate a minor key
 PARAMDEF(help)      // Display the help.
 PARAMDEF(license)   // Display the license.
 PARAMDEF(logging)   // Enables various types of logging; specify * to enable all
@@ -60,6 +68,8 @@ HELPEXAMPLEDEF(SECTION)
 HELPEXAMPLEDEF(CLEF)
 HELPEXAMPLEDEF(OTTAVA)
 HELPEXAMPLEDEF(STAVES)
+HELPEXAMPLEDEF(TIME_SIG)
+HELPEXAMPLEDEF(KEY_SIG)
 					
 #undef HELPEXAMPLEDEF
 #endif
@@ -73,6 +83,7 @@ LOGGINGTYPEDEF(MEASURE_EVENTS)
 LOGGINGTYPEDEF(PRELIM_MEASURES)
 LOGGINGTYPEDEF(FINAL_MEASURES)
 LOGGINGTYPEDEF(NOTE_OVERLAPS)
+LOGGINGTYPEDEF(SCHEDULED_ITEMS)
 
 #undef LOGGINGTYPEDEF
 #endif

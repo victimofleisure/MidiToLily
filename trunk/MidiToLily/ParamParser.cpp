@@ -9,6 +9,7 @@
 		rev		date	comments
         00		08dec23	initial version
 		01		27dec24	add subtitle, opus, piece and staves params
+		02		06jan25	add time and key signature params
  
 */
 
@@ -16,6 +17,7 @@
 #include "ParamParser.h"
 #include "MidiToLily.h"	// for throw exception method
 #include "VersionInfo.h"
+#include "Note.h"
 
 extern CWinApp theApp;
 
@@ -37,6 +39,12 @@ void CParamParser::OnError(CString m_sErrMsg)
 	CMidiToLily::OnError(m_sErrMsg);
 }
 
+bool CParamParser::IsPowerOfTwo(int n)
+{
+	ASSERT(n > 0);
+	return (n & (n - 1)) == 0;
+}
+
 void CParamParser::OnQuant(CString sParam, int& nDuration)
 {
 	int	nError = IDS_CLA_QUANT_INVALID;	// assume failure
@@ -44,14 +52,11 @@ void CParamParser::OnQuant(CString sParam, int& nDuration)
 	// if parameter scans to an integer greater than zero
 	if (_stscanf_s(sParam.GetString(), _T("%d"), &nParam) == 1 && nParam > 0) {
 		// find parameter's first set bit, starting from least significant bit
-		DWORD	iBit;	// receives index of first set bit
-		if (_BitScanForward(&iBit, nParam)) {	// if set bit found
-			nDuration = 1 << iBit;	// convert index to a power of two
-			if (nDuration == nParam) {	// if parameter is a power of two
-				nError = 0;
-			} else {	// parameter isn't a power of two
-				nError = IDS_CLA_QUANT_NOT_POWER;
-			}
+		if (IsPowerOfTwo(nParam)) {	// if parameter is a power of two
+			nDuration = nParam;
+			nError = 0;	// success
+		} else {	// parameter isn't a power of two
+			nError = IDS_CLA_QUANT_NOT_POWER;
 		}
 	}
 	if (nError) {	// if an error occurred
@@ -70,25 +75,24 @@ void CParamParser::OnOffset(CString sParam)
 
 void CParamParser::OnClef(CString sParam)
 {
+	const TCHAR cSeparator = '=';
 	CString	sToken;
 	int	iStart = 0;
 	while (!(sToken = sParam.Tokenize(_T(","), iStart)).IsEmpty()) {
-		const TCHAR cSeparator = '=';
-		LPCTSTR pszToken = sToken;
 		int	iSeparator = sToken.Find(cSeparator);	// find separator
 		if (iSeparator < 0) {	// if separator not found
-			m_sErrMsg.Format(IDS_CLA_CLEF_NO_SEPARATOR, pszToken, cSeparator);
+			m_sErrMsg.Format(IDS_CLA_CLEF_NO_SEPARATOR, sToken.GetString(), cSeparator);
 			OnError(m_sErrMsg);
 		}
 		CString	sClef(sToken.Mid(iSeparator + 1));
 		if (sClef.IsEmpty()) {	// if clef not specified
-			m_sErrMsg.Format(IDS_CLA_CLEF_NO_NAME, pszToken);
+			m_sErrMsg.Format(IDS_CLA_CLEF_NO_NAME, sToken.GetString());
 			OnError(m_sErrMsg);
 		}
 		int	iTrack;
 		int	nConvs = _stscanf_s(sToken.GetString(), _T("%d"), &iTrack);
 		if (nConvs != 1 || iTrack < 0 || iTrack > SHRT_MAX) {	// if invalid track index
-			m_sErrMsg.Format(IDS_CLA_CLEF_BAD_TRACK_INDEX, pszToken);
+			m_sErrMsg.Format(IDS_CLA_CLEF_BAD_TRACK_INDEX, sToken.GetString());
 			OnError(m_sErrMsg);
 		}
 		m_arrClef.SetAtGrow(iTrack, sClef);
@@ -100,16 +104,10 @@ void CParamParser::OnSection(CString sParam)
 	CString	sToken;
 	int	iStart = 0;
 	while (!(sToken = sParam.Tokenize(_T(","), iStart)).IsEmpty()) {
-		LPCTSTR pszToken = sToken;
 		int	nMeasure;
 		int	nConvs = _stscanf_s(sToken.GetString(), _T("%d"), &nMeasure);
-		if (nConvs != 1) {	// if measure number not specified
-			m_sErrMsg.Format(IDS_CLA_SECTION_BAD_MEASURE, pszToken);
-			OnError(m_sErrMsg);
-		}
-		nMeasure--;	// internally, measure is zero-based index
-		if (nMeasure < 0) {	// if invalid measure index
-			m_sErrMsg.Format(IDS_CLA_SECTION_BAD_MEASURE, pszToken);
+		if (nConvs != 1 || nMeasure < 1) {	// if measure number not specified or invalid
+			m_sErrMsg.Format(IDS_CLA_SECTION_BAD_MEASURE, sToken.GetString());
 			OnError(m_sErrMsg);
 		}
 		m_arrSection.Add(nMeasure);
@@ -118,48 +116,47 @@ void CParamParser::OnSection(CString sParam)
 
 void CParamParser::OnOttava(CString sParam)
 {
+	const TCHAR cSeparator = '=';
 	CString	sToken;
 	int	iStart = 0;
 	while (!(sToken = sParam.Tokenize(_T(","), iStart)).IsEmpty()) {
-		const TCHAR cSeparator = '=';
-		LPCTSTR pszToken = sToken;
 		int	iSeparator = sToken.Find(cSeparator);	// find separator
 		if (iSeparator < 0) {	// if separator not found
-			m_sErrMsg.Format(IDS_CLA_OTTAVA_NO_SEPARATOR, pszToken, cSeparator);
+			m_sErrMsg.Format(IDS_CLA_OTTAVA_NO_SEPARATOR, sToken.GetString(), cSeparator);
 			OnError(m_sErrMsg);
 		}
 		CString	sOctave(sToken.Mid(iSeparator + 1));
 		if (sOctave.IsEmpty()) {	// if octave shift not specified
-			m_sErrMsg.Format(IDS_CLA_OTTAVA_NO_OCTAVE, pszToken);
+			m_sErrMsg.Format(IDS_CLA_OTTAVA_NO_OCTAVE, sToken.GetString());
 			OnError(m_sErrMsg);
 		}
 		COttava	ot;
 		int nConvs = _stscanf_s(sOctave.GetString(), _T("%d"), &ot.m_nShift);
 		if (nConvs != 1) {	// if octave shift isn't a number
-			m_sErrMsg.Format(IDS_CLA_OTTAVA_BAD_OCTAVE, pszToken);
+			m_sErrMsg.Format(IDS_CLA_OTTAVA_BAD_OCTAVE, sToken.GetString());
 			OnError(m_sErrMsg);
 		}
 		const TCHAR cTimeSeparator = '_';
 		int	iTimeSeparator = sToken.Find(cTimeSeparator);	// find time separator
 		if (iTimeSeparator < 0) {	// if time separator not found
-			m_sErrMsg.Format(IDS_CLA_OTTAVA_NO_TIME_SEPARATOR, pszToken, cTimeSeparator);
+			m_sErrMsg.Format(IDS_CLA_OTTAVA_NO_TIME_SEPARATOR, sToken.GetString(), cTimeSeparator);
 			OnError(m_sErrMsg);
 		}
 		int	nTimeLen = iSeparator - iTimeSeparator - 1;
 		if (nTimeLen < 1) {	// if time not specified
-			m_sErrMsg.Format(IDS_CLA_OTTAVA_NO_TIME, pszToken);
+			m_sErrMsg.Format(IDS_CLA_OTTAVA_NO_TIME, sToken.GetString());
 			OnError(m_sErrMsg);
 		}
 		CString	sTime(sToken.Mid(iTimeSeparator + 1, nTimeLen));
 		int	iTrack;
 		nConvs = _stscanf_s(sToken.GetString(), _T("%d"), &iTrack);
 		if (nConvs != 1 || iTrack < 0 || iTrack > SHRT_MAX) {	// if invalid track index
-			m_sErrMsg.Format(IDS_CLA_OTTAVA_BAD_TRACK_INDEX, pszToken);
+			m_sErrMsg.Format(IDS_CLA_OTTAVA_BAD_TRACK_INDEX, sToken.GetString());
 			OnError(m_sErrMsg);
 		}
 		nConvs = _stscanf_s(sTime.GetString(), _T("%d:%d:%d"), &ot.m_nMeasure, &ot.m_nBeat, &ot.m_nTick);
 		if (nConvs != 3 || ot.m_nMeasure < 1 || ot.m_nBeat < 1 || ot.m_nTick < 0) {	// if invalid time
-			m_sErrMsg.Format(IDS_CLA_OTTAVA_BAD_TIME_FORMAT, pszToken);
+			m_sErrMsg.Format(IDS_CLA_OTTAVA_BAD_TIME_FORMAT, sToken.GetString());
 			OnError(m_sErrMsg);
 		}
 		int	nNewSize = max(m_arrOttavaArray.GetSize(), iTrack + 1);
@@ -180,6 +177,63 @@ void CParamParser::OnStaves(CString sParam)
 			OnError(m_sErrMsg);
 		}
 		m_arrStave.Add(iTrack);
+	}
+}
+
+void CParamParser::OnTimeSignature(CString sParam)
+{
+	CString	sToken;
+	int	iStart = 0;
+	while (!(sToken = sParam.Tokenize(_T(","), iStart)).IsEmpty()) {
+		int	iTokenStart = 0;
+		CString	sMeasure(sToken.Tokenize(_T("="), iTokenStart));
+		CTimeSigChange	tsc;
+		int	nConvs = _stscanf_s(sMeasure.GetString(), _T("%d"), &tsc.m_nMeasure);
+		if (nConvs != 1 || tsc.m_nMeasure < 1) {	// if conversion failed or range error
+			m_sErrMsg.Format(IDS_CLA_TIME_BAD_MEASURE, sToken.GetString());
+			OnError(m_sErrMsg);
+		}
+		CString	sTimeSig(sToken.Tokenize(_T(""), iTokenStart));
+		nConvs = _stscanf_s(sTimeSig.GetString(), _T("%d/%d"), &tsc.m_nNumer, &tsc.m_nDenom);
+		if (nConvs != 2 || tsc.m_nNumer < 1 || tsc.m_nDenom < 1) {	// if conversion failed or range error
+			m_sErrMsg.Format(IDS_CLA_TIME_BAD_SIGNATURE, sToken.GetString());
+			OnError(m_sErrMsg);
+		}
+		if (!IsPowerOfTwo(tsc.m_nDenom)) {	// if denominator isn't a power of two
+			m_sErrMsg.Format(IDS_CLA_TIME_NOT_POWER, sToken.GetString());
+			OnError(m_sErrMsg);
+		}
+		m_arrTimeSig.Add(tsc);
+	}
+}
+
+void CParamParser::OnKeySignature(CString sParam)
+{
+	CString	sToken;
+	int	iStart = 0;
+	while (!(sToken = sParam.Tokenize(_T(","), iStart)).IsEmpty()) {
+		int	iTokenStart = 0;
+		CString	sMeasure(sToken.Tokenize(_T("="), iTokenStart));
+		CKeySigChange	ksc;
+		int	nConvs = _stscanf_s(sMeasure.GetString(), _T("%d"), &ksc.m_nMeasure);
+		if (nConvs != 1 || ksc.m_nMeasure < 1) {	// if conversion failed or range error
+			m_sErrMsg.Format(IDS_CLA_KEY_BAD_MEASURE, sToken.GetString());
+			OnError(m_sErrMsg);
+		}
+		CString	sKeySig(sToken.Tokenize(_T(""), iTokenStart));
+		CString	sOrigKeySig(sKeySig);
+		if (sKeySig.GetLength() && sKeySig.Right(1) == 'm') {
+			ksc.m_bIsMinor = true;
+			sKeySig.Delete(sKeySig.GetLength() - 1);
+		} else {
+			ksc.m_bIsMinor = false;
+		}
+		ksc.m_nAccs = CNote::GetLilyKeyIdx(sKeySig, ksc.m_bIsMinor);
+		if (ksc.m_nAccs == INT_MAX) {
+			m_sErrMsg.Format(IDS_CLA_KEY_BAD_SIGNATURE, sOrigKeySig.GetString());
+			OnError(m_sErrMsg);
+		}
+		m_arrKeySig.Add(ksc);
 	}
 }
 
@@ -292,6 +346,12 @@ ParseParamEval:
 			break;
 		case F_staves:
 			OnStaves(pszParam);
+			break;
+		case F_time:
+			OnTimeSignature(pszParam);
+			break;
+		case F_key:
+			OnKeySignature(pszParam);
 			break;
 		case F_logging:
 			OnLogging(pszParam);

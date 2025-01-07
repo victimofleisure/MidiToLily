@@ -9,6 +9,7 @@
 		rev		date	comments
         00		08dec23	initial version
 		01		27dec24	add subtitle, opus, piece and staves params
+		02		06jan25	add time and key signature params
  
 */
 
@@ -34,6 +35,7 @@ public:
 
 // Operations
 	bool	ParseCommandLine();
+	static	bool	IsPowerOfTwo(int n);
 	static	CString	GetAppVersionString();
 	static	void	ShowAppVersion();
 	static	void	ShowLicense();
@@ -68,6 +70,8 @@ protected:
 	void	OnSection(CString sParam);
 	void	OnOttava(CString sParam);
 	void	OnStaves(CString sParam);
+	void	OnTimeSignature(CString sParam);
+	void	OnKeySignature(CString sParam);
 	void	OnLogging(CString sParam);
 	static	CString	UnpackHelp(CString& sParam, int nParamHelpResID, bool bArgumentUpperCase = true);
 	static	void	ShowParamHelp(LPCTSTR pszParamName, int nParamHelpResID, bool bArgumentUpperCase = true);
