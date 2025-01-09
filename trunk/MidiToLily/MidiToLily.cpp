@@ -23,7 +23,6 @@
 #include "MidiToLily.h"
 #include "StdioFileUTF.h"
 #include "Note.h"
-#include "ParamParser.h"
 
 #ifdef _DEBUG
 #define new DEBUG_NEW
