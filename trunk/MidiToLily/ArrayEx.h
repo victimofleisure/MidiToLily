@@ -36,6 +36,7 @@
 		26		01apr19	add FastInsertSortedUnique
 		27		26sep20	add indirect sort
 		28		23feb23	add WORD array
+		29		08jan25	add default compare function for indirect sort
 
 		enhanced array with copy ctor, assignment, and fast const access
  
@@ -130,7 +131,8 @@ public:
 	void	InsertSelection(const CIntArrayEx& arrSelection, CArrayEx& arrInsert);
 	void	DeleteSelection(const CIntArrayEx& arrSelection);
 	void	MoveSelection(const CIntArrayEx& arrSelection, int iDropPos);
-	void	SortIndirect(int (__cdecl *_PtFuncCompare)(const void *, const void *), CPtrArrayEx *parrSortedPtr = NULL);
+	void	SortIndirect(int (__cdecl *pCompareFunc)(const void *, const void *) = NULL, CPtrArrayEx *parrSortedPtr = NULL);
+	static int	SortIndirectCompareFunc(const void *elem1, const void *elem2);
 };
 
 template<class TYPE, class ARG_TYPE>
@@ -353,7 +355,15 @@ AFX_INLINE void CArrayEx<TYPE, ARG_TYPE>::MoveSelection(const CIntArrayEx& arrSe
 }
 
 template<class TYPE, class ARG_TYPE>
-AFX_INLINE void CArrayEx<TYPE, ARG_TYPE>::SortIndirect(int (__cdecl *_PtFuncCompare)(const void *, const void *), CPtrArrayEx *parrSortedPtr)
+AFX_INLINE int CArrayEx<TYPE, ARG_TYPE>::SortIndirectCompareFunc(const void *elem1, const void *elem2)
+{
+	const TYPE	*a = *(const TYPE **)elem1;
+	const TYPE	*b = *(const TYPE **)elem2;
+	return *a < *b ? -1 : (*a > *b ? 1 : 0);	// ascending sort
+}
+
+template<class TYPE, class ARG_TYPE>
+AFX_INLINE void CArrayEx<TYPE, ARG_TYPE>::SortIndirect(int (__cdecl *pCompareFunc)(const void *, const void *), CPtrArrayEx *parrSortedPtr)
 {
 	W64INT	nElems = m_nSize;
 	CPtrArrayEx	arrObPtr;
@@ -362,7 +372,9 @@ AFX_INLINE void CArrayEx<TYPE, ARG_TYPE>::SortIndirect(int (__cdecl *_PtFuncComp
 	for (iElem = 0; iElem < nElems; iElem++) {	// create pointers to elements
 		arrObPtr[iElem] = &GetAt(iElem);
 	}
-	qsort(arrObPtr.GetData(), nElems, sizeof(PVOID), _PtFuncCompare);	// sort element pointers
+	if (pCompareFunc == NULL)	// if compare function not specified
+		pCompareFunc = SortIndirectCompareFunc;	// use default compare function
+	qsort(arrObPtr.GetData(), nElems, sizeof(PVOID), pCompareFunc);	// sort element pointers
 	CArrayEx<TYPE, ARG_TYPE>	arrOb;
 	arrOb.SetSize(nElems);
 	for (iElem = 0; iElem < nElems; iElem++) {	// copy elements in sorted order to temporary array

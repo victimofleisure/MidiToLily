@@ -11,6 +11,7 @@
 		01		27dec24	add subtitle, opus, piece and staves params
 		02		29dec24	add logging of note overlaps
 		03		06jan25	add time and key signature params
+		04		09jan25	add tempo param
 
 */
 
@@ -32,7 +33,7 @@ PARAMDEF(quant)     // Quantize note start and end times to the specified durati
 PARAMDEF(triplet)   // Quantize note start and end times to the specified TRIPLET
                     // duration (1=whole, 2=half, 4=quarter, etc.); if combined
                     // with regular quantization, notes snap to the nearest grid.
-                    // 4=quarter etc.); can be combined with regular quant
+                    // 4=quarter etc.); can be combined with regular quant.
 PARAMDEF(offset)    // Signed offset in ticks added to all MIDI event times.
 PARAMDEF(clef)      // Comma-separated list of clef overrides, each consisting of
                     // t=c, where t is a track index and c is a clef name defined
@@ -45,14 +46,18 @@ PARAMDEF(ottava)    // Comma-separated list of octave shifts, each consisting of
                     // Measure:Beat:Tick format, and n is a signed number of
                     // octaves to transpose the staff by.
 PARAMDEF(staves)	// Comma-separated list of track indices specifying which
-					// tracks are assigned to staves, from top to bottom
-PARAMDEF(time)		// Comma-separated list of time signatures, each consisting of
-					// M=n/d where M is a one-based measure number, and n and d
-					// are the the time signature's numerator and denominator
+					// tracks are assigned to staves, from top to bottom.
 PARAMDEF(key)		// Comma-separated list of key signatures, each consisting of
 					// M=k where M is a one-based measure number, and k is the
 					// key signature in LilyPond note format, optionally followed
-					// by the letter 'm' to indicate a minor key
+					// by the letter 'm' to indicate a minor key.
+PARAMDEF(time)		// Comma-separated list of time signatures, each consisting of
+					// M=n/d where M is a one-based measure number, and n and d
+					// are the the time signature's numerator and denominator.
+PARAMDEF(tempo)		// Comma-separated list of tempos, each consisting of M=T
+					// where M is a one-based measure number and T is a tempo.
+					// The tempo can be a metronome mark, a description, or both.
+					// If the tempo list contains spaces, enclose it in quotes.
 PARAMDEF(help)      // Display the help.
 PARAMDEF(license)   // Display the license.
 PARAMDEF(logging)   // Enables various types of logging; specify * to enable all
@@ -70,6 +75,7 @@ HELPEXAMPLEDEF(OTTAVA)
 HELPEXAMPLEDEF(STAVES)
 HELPEXAMPLEDEF(TIME_SIG)
 HELPEXAMPLEDEF(KEY_SIG)
+HELPEXAMPLEDEF(TEMPO)
 					
 #undef HELPEXAMPLEDEF
 #endif

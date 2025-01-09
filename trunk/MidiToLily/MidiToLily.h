@@ -11,104 +11,23 @@
 		01		27dec24	add subtitle, opus, piece and staves params
 		02		29dec24	add logging of note overlaps
 		03		06jan25	add time and key signature params
+		04		08jan25	add scan MBT time
+		05		09jan25	add tempo param
  
 */
 
 #pragma once
 
 #include "resource.h"
-#include "ArrayEx.h"
 #include "Midi.h"
 #include "MidiFile.h"
 #include "BoundArray.h"
+#include "Params.h"
 
-class CMidiToLily {
+class CMidiToLily : public CParamBase {
 public:
 // Construction
 	CMidiToLily();
-
-// Types
-	class CMbtTime {
-	public:
-		CMbtTime();
-		CMbtTime(int nMeasure, int nBeat, int nTick);
-		int		m_nMeasure;	// one-based measure number
-		int		m_nBeat;	// one-based beat number
-		int		m_nTick;	// zero-based tick
-		CString	FormatTime() const;
-		bool	operator==(const CMbtTime& mt) const;
-		bool	operator!=(const CMbtTime& mt) const;
-		bool	operator>(const CMbtTime& mt) const;
-		bool	operator<(const CMbtTime& mt) const;
-	};
-	class CTimeSig {
-	public:
-		CTimeSig();
-		CTimeSig(int nNumer, int nDenom);
-		bool	operator==(const CTimeSig& ts) const;
-		bool	operator!=(const CTimeSig& ts) const;
-		CString	Format() const;
-		int		m_nNumer;	// numerator
-		int		m_nDenom;	// denominator
-	};
-	class CKeySig {
-	public:
-		CKeySig();
-		CKeySig(int nAccs, bool bIsMinor);
-		bool	operator==(const CKeySig& ks) const;
-		bool	operator!=(const CKeySig& ks) const;
-		CString	Format() const;
-		CString	FormatLily() const;
-		int		m_nAccs;	// number of accidentals; positive for sharps, negative for flats
-		int		m_bIsMinor;	// true if minor, else major
-	};
-	class CParams {
-	public:
-		CParams();
-		class COttava : public CMbtTime {
-		public:
-			int		m_nShift;		// signed number of octaves to shift, or zero to reset
-			bool	operator>(const COttava& ot) const;
-			bool	operator<(const COttava& ot) const;
-		};
-		typedef CArrayEx<COttava, COttava&> COttavaArray;
-		typedef CArrayEx<COttavaArray, COttavaArray&> COttavaArrayArray;
-		class CTimeSigChange : public CTimeSig {
-		public:
-			int		m_nMeasure;		// one-based measure number at which change occurs
-			bool	operator>(const CTimeSigChange& tsc) const;
-			bool	operator<(const CTimeSigChange& tsc) const;
-		};
-		typedef CArrayEx<CTimeSigChange, CTimeSigChange&> CTimeSigChangeArray;
-		class CKeySigChange : public CKeySig {
-		public:
-			int		m_nMeasure;		// one-based measure number at which change occurs
-			bool	operator>(const CKeySigChange& ksc) const;
-			bool	operator<(const CKeySigChange& ksc) const;
-		};
-		typedef CArrayEx<CKeySigChange, CKeySigChange&> CKeySigChangeArray;
-		CString	m_sOutput;		// path of output file
-		CString	m_sTitle;		// optional title string
-		CString	m_sSubtitle;	// optional subtitle string
-		CString	m_sOpus;		// optional opus string
-		CString	m_sPiece;		// optional piece string
-		CString	m_sComposer;	// optional composer string
-		CString	m_sCopyright;	// optional copyright string
-		bool	m_bFrenched;	// true if hiding empty staves
-		bool	m_bVerify;		// true if verifying MIDI file
-		int		m_nOffset;		// offset in ticks added to all events
-		int		m_nQuantDenom;	// regular quantization denominator as a power of two, or zero if none
-		int		m_nTripletQuantDenom;	// triplet quantization denominator as a power of two, or zero if none
-		UINT	m_nLoggingMask;	// bitmask of enabled logging types; see enum below
-		CStringArrayEx	m_arrClef;	// array of clef overrides; one item per track, omitting trailing empty clefs
-		CIntArrayEx	m_arrSection;	// array of sections; each item is a one-based measure number
-		COttavaArrayArray	m_arrOttavaArray;	// one array of ottava arrays per track
-		CIntArrayEx	m_arrStave;	// array of track indices specifying which tracks are assigned to staves
-		CTimeSigChangeArray	m_arrTimeSig;	// array of time signature changes
-		CKeySigChangeArray	m_arrKeySig;	// array of keysignature changes
-		void	Finalize();
-		void	Log() const;
-	};
 
 // Constants
 	enum {	// define logging types
@@ -175,7 +94,7 @@ protected:
 		bool	m_bIsTied;		// true if tied
 		bool	m_bIsTuplet;	// true if tuplet member
 		BYTE	m_nDots;		// number of dots
-		WORD	m_nLilyDur;		// LilyPond duration; 1 = whole, 2 = half, 4 = quarter, etc.
+		WORD	m_nDenom;		// denominator; 1 = whole, 2 = half, 4 = quarter, etc.
 		bool	IsRest() const;
 		void	Reset();
 	};
@@ -195,16 +114,14 @@ protected:
 	CTrackArray	m_arrTrack;	// array of tracks
 	CStringArrayEx	m_arrTrackName;	// array of track names
 	WORD	m_nTimebase;	// timebase in ticks
-	int		m_nTempo;		// tempo in beats per minute
 	int		m_nEndTime;		// end time of longest track
-	CKeySig	m_keySigInit;	// initial key signature from MIDI file
-	CTimeSig	m_timeSigInit;	// initial time signature from MIDI file
 	int		m_nQuantDur;	// regular quantization duration in ticks, or zero if none
 	int		m_nTripletQuantDur;	// triplet quantization duration in ticks, or zero if none
 
 // Member data that must be reset before a track is processed
 	CKeySig	m_keySig;		// current key signature
 	CTimeSig	m_timeSig;	// current time signature
+	CTempo	m_tempo;		// current tempo
 	int		m_nCurTime;		// current time during processing
 	int		m_iTrack;		// index of current track
 	int		m_iMeasure;		// index of current measure
@@ -213,6 +130,7 @@ protected:
 	int		m_iOttava;		// index of next item in ottava array
 	int		m_iTimeSig;		// index of next item in time signature array
 	int		m_iKeySig;		// index of next item in key signature array
+	int		m_iTempo;		// index of next item in tempo array
 
 // Helpers
 	void	ResetTrackData();
@@ -240,123 +158,6 @@ protected:
 	CString	GetClefString(int iTrack) const;
 	CString	GetMidiName(DWORD dwMsg) const;
 };
-
-inline CMidiToLily::CMbtTime::CMbtTime()
-{
-}
-
-inline CMidiToLily::CMbtTime::CMbtTime(int nMeasure, int nBeat, int nTick)
-{
-	m_nMeasure = nMeasure;
-	m_nBeat = nBeat;
-	m_nTick = nTick;
-}
-
-inline bool CMidiToLily::CMbtTime::operator==(const CMbtTime& mt) const
-{
-	return m_nMeasure == mt.m_nMeasure && m_nBeat == mt.m_nBeat && m_nTick == mt.m_nTick;
-}
-
-inline bool CMidiToLily::CMbtTime::operator!=(const CMbtTime& mt) const
-{
-	return m_nMeasure != mt.m_nMeasure || m_nBeat != mt.m_nBeat || m_nTick != mt.m_nTick;
-}
-
-inline bool CMidiToLily::CMbtTime::operator>(const CMbtTime& mt) const
-{
-	if (m_nMeasure > mt.m_nMeasure)
-		return true;
-	if (m_nMeasure < mt.m_nMeasure)
-		return false;
-	if (m_nBeat > mt.m_nBeat)
-		return true;
-	if (m_nBeat < mt.m_nBeat)
-		return false;
-	return m_nTick > mt.m_nTick;
-}
-
-inline bool CMidiToLily::CMbtTime::operator<(const CMbtTime& mt) const
-{
-	if (m_nMeasure < mt.m_nMeasure)
-		return true;
-	if (m_nMeasure > mt.m_nMeasure)
-		return false;
-	if (m_nBeat < mt.m_nBeat)
-		return true;
-	if (m_nBeat > mt.m_nBeat)
-		return false;
-	return m_nTick < mt.m_nTick;
-}
-
-inline CMidiToLily::CTimeSig::CTimeSig()
-{
-}
-
-inline CMidiToLily::CTimeSig::CTimeSig(int nNumer, int nDenom)
-{
-	m_nNumer = nNumer;
-	m_nDenom = nDenom;
-}
-
-inline bool CMidiToLily::CTimeSig::operator==(const CTimeSig& ts) const
-{
-	return m_nNumer == ts.m_nNumer && m_nDenom == ts.m_nDenom;
-}
-
-inline bool CMidiToLily::CTimeSig::operator!=(const CTimeSig& ts) const
-{
-	return m_nNumer != ts.m_nNumer || m_nDenom != ts.m_nDenom;
-}
-
-inline CMidiToLily::CKeySig::CKeySig()
-{
-}
-
-inline CMidiToLily::CKeySig::CKeySig(int nAccs, bool bIsMinor)
-{
-	 m_nAccs = nAccs;
-	 m_bIsMinor = bIsMinor;
-}
-
-inline bool CMidiToLily::CKeySig::operator==(const CKeySig& ks) const
-{
-	return m_nAccs == ks.m_nAccs && m_bIsMinor == ks.m_bIsMinor;
-}
-
-inline bool CMidiToLily::CKeySig::operator!=(const CKeySig& ks) const
-{
-	return m_nAccs != ks.m_nAccs || m_bIsMinor != ks.m_bIsMinor;
-}
-
-inline bool CMidiToLily::CParams::COttava::operator>(const COttava& ot) const
-{
-	return CMbtTime::operator>(ot);
-}
-
-inline bool CMidiToLily::CParams::COttava::operator<(const COttava& ot) const
-{
-	return CMbtTime::operator<(ot);
-}
-
-inline bool CMidiToLily::CParams::CTimeSigChange::operator>(const CTimeSigChange& tsc) const
-{
-	return m_nMeasure > tsc.m_nMeasure;
-}
-
-inline bool CMidiToLily::CParams::CTimeSigChange::operator<(const CTimeSigChange& tsc) const
-{
-	return m_nMeasure < tsc.m_nMeasure;
-}
-
-inline bool CMidiToLily::CParams::CKeySigChange::operator>(const CKeySigChange& ksc) const
-{
-	return m_nMeasure > ksc.m_nMeasure;
-}
-
-inline bool CMidiToLily::CParams::CKeySigChange::operator<(const CKeySigChange& ksc) const
-{
-	return m_nMeasure < ksc.m_nMeasure;
-}
 
 inline bool CMidiToLily::IsLogging() const
 {

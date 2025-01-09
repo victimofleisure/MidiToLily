@@ -11,6 +11,8 @@
 		01		27dec24	add subtitle, opus, piece and staves params
 		02		29dec24	add logging of note overlaps
 		03		06jan25	add time and key signature params
+		04		08jan25	add scan MBT time
+		05		09jan25	add tempo param
  
 */
 
@@ -31,111 +33,6 @@
 
 CWinApp theApp;
 
-CString CMidiToLily::CMbtTime::FormatTime() const
-{
-	CString	sMidiTime;
-	sMidiTime.Format(_T("%d:%d:%d"), m_nMeasure, m_nBeat, m_nTick);
-	return sMidiTime;
-}
-
-CString	CMidiToLily::CTimeSig::Format() const
-{
-	CString	sTimeSig;
-	sTimeSig.Format(_T("%d/%d"), m_nNumer, m_nDenom);
-	return sTimeSig;
-}
-
-CString	CMidiToLily::CKeySig::Format() const
-{
-	static const LPCTSTR	pszTonality[2] = {
-		_T(""),
-		_T("m"),
-	};
-	CString	sKeySig(CNote::GetKeyName(m_nAccs, m_bIsMinor));
-	sKeySig += pszTonality[m_bIsMinor];
-	return sKeySig;
-}
-
-CString	CMidiToLily::CKeySig::FormatLily() const
-{
-	static const LPCTSTR	pszTonality[2] = {
-		_T(" \\major"),
-		_T(" \\minor"),
-	};
-	CString	sKeySig(CNote::GetLilyKeyName(m_nAccs, m_bIsMinor));
-	sKeySig += pszTonality[m_bIsMinor];
-	return sKeySig;
-}
-
-CMidiToLily::CParams::CParams()
-{
-	m_bFrenched = false;
-	m_bVerify = false;
-	m_nOffset = 0;
-	m_nQuantDenom = 0;
-	m_nTripletQuantDenom = 0;
-	m_nLoggingMask = 0;
-}
-
-void CMidiToLily::CParams::Log() const
-{
-	_tprintf(_T("parameters:\n"));
-	_tprintf(_T("Output = \"%s\"\n"), m_sOutput.GetString());
-	_tprintf(_T("Title = \"%s\"\n"), m_sTitle.GetString());
-	_tprintf(_T("Subtitle = \"%s\"\n"), m_sSubtitle.GetString());
-	_tprintf(_T("Opus = \"%s\"\n"), m_sOpus.GetString());
-	_tprintf(_T("Piece = \"%s\"\n"), m_sPiece.GetString());
-	_tprintf(_T("Composer = \"%s\"\n"), m_sComposer.GetString());
-	_tprintf(_T("Copyright = \"%s\"\n"), m_sCopyright.GetString());
-	_tprintf(_T("Frenched = %d\n"), m_bFrenched);
-	_tprintf(_T("Offset = %d\n"), m_nOffset);
-	_tprintf(_T("Quant = %d\n"), m_nQuantDenom);
-	_tprintf(_T("Triplet = %d\n"), m_nTripletQuantDenom);
-	_tprintf(_T("Sections = %d\n"), m_arrSection.GetSize());
-	for (int iSection = 0; iSection < m_arrSection.GetSize(); iSection++) {
-		_tprintf(_T("Section %d = %d\n"), iSection, m_arrSection[iSection]);
-	}
-	for (int iClef = 0; iClef < m_arrClef.GetSize(); iClef++) {
-		_tprintf(_T("Track %d clef = \"%s\"\n"), iClef, m_arrClef[iClef].GetString());
-	}
-	for (int iTrack = 0; iTrack < m_arrOttavaArray.GetSize(); iTrack++) {
-		const COttavaArray& arrOttava = m_arrOttavaArray[iTrack];
-		_tprintf(_T("Track %d Ottavas = %d\n"), iTrack, arrOttava.GetSize());
-		for (int iOttava = 0; iOttava < arrOttava.GetSize(); iOttava++) {
-			const COttava& ot = arrOttava[iOttava];
-			_tprintf(_T("Ottava %d = %s %d\n"), iOttava, 
-				ot.FormatTime().GetString(), ot.m_nShift);
-		}
-	}
-	_tprintf(_T("Staves = %d\n"), m_arrStave.GetSize());
-	for (int iStave = 0; iStave < m_arrStave.GetSize(); iStave++) {
-		_tprintf(_T("Stave %d track = %d\n"), iStave, m_arrStave[iStave]);
-	}
-	_tprintf(_T("TimeSigs = %d\n"), m_arrTimeSig.GetSize());
-	for (int iTimeSig = 0; iTimeSig < m_arrTimeSig.GetSize(); iTimeSig++) {
-		const CTimeSigChange&	tsc = m_arrTimeSig[iTimeSig];
-		_tprintf(_T("TimeSig %d = %d %s\n"), iTimeSig, 
-			tsc.m_nMeasure, tsc.Format().GetString());
-	}
-	_tprintf(_T("KeySigs = %d\n"), m_arrKeySig.GetSize());
-	for (int iKeySig = 0; iKeySig < m_arrKeySig.GetSize(); iKeySig++) {
-		const CKeySigChange&	ksc = m_arrKeySig[iKeySig];
-		_tprintf(_T("KeySig %d = %d %s\n"), iKeySig, 
-			ksc.m_nMeasure, ksc.Format().GetString());
-	}
-}
-
-void CMidiToLily::CParams::Finalize()
-{
-	m_arrSection.Sort();	// sort sections in ascending order by bar number
-	int	nTracks = m_arrOttavaArray.GetSize();
-	for (int iTrack = 0; iTrack < nTracks; iTrack++) {	// for each track
-		m_arrOttavaArray[iTrack].Sort();	// sort ottavas in ascending order by time in ticks
-	}
-	m_arrTimeSig.Sort();	// sort time signatures in ascending order by measure number
-	m_arrKeySig.Sort();		// sort key signatures in ascending order by measure number
-}
-
 BOOL CMidiToLily::CMyException::GetErrorMessage(LPTSTR lpszError, UINT nMaxError, PUINT pnHelpContext) const
 {
 	UNREFERENCED_PARAMETER(pnHelpContext);
@@ -149,7 +46,7 @@ inline void CMidiToLily::CItem::Reset()
 	m_bIsTied = false;
 	m_bIsTuplet = false;
 	m_nDots = 0;
-	m_nLilyDur = 0;
+	m_nDenom = 0;
 	m_arrNote.RemoveAll();
 }
 
@@ -198,10 +95,7 @@ static const bool m_bWriteFine = true;	// in case we make it optional
 CMidiToLily::CMidiToLily()
 {
 	m_nTimebase = 0;
-	m_nTempo = 0;
 	m_nEndTime = 0;
-	m_keySigInit = CKeySig(0, 0);
-	m_timeSigInit = CTimeSig(0, 0);
 	m_nQuantDur = 0;
 	m_nTripletQuantDur = 0;
 	ResetTrackData();
@@ -209,8 +103,6 @@ CMidiToLily::CMidiToLily()
 
 void CMidiToLily::ResetTrackData()
 {
-	m_keySig = m_keySigInit;
-	m_timeSig = m_timeSigInit;
 	m_nCurTime = 0;
 	m_iTrack = 0;
 	m_iMeasure = 0;
@@ -219,6 +111,7 @@ void CMidiToLily::ResetTrackData()
 	m_iOttava = 0;
 	m_iTimeSig = 0;
 	m_iKeySig = 0;
+	m_iTempo = 0;
 }
 
 void CMidiToLily::OnError(CString sErrMsg)
@@ -252,13 +145,26 @@ void CMidiToLily::ReadMidiFile(LPCTSTR pszMidiFilePath)
 		_tprintf(_T("reading MIDI file \"%s\"\n"), pszMidiFilePath);
 	}
 	fMidi.ReadTracks(arrTrack, m_arrTrackName, m_nTimebase, &nTempo, &sigTime, &sigKey);
-	m_nTempo = Round(CMidiFile::MICROS_PER_MINUTE / double(nTempo));	// LilyPond tempo is integer
-	m_keySigInit = CKeySig(sigKey.SharpsOrFlats, sigKey.IsMinor != 0);
-	m_timeSigInit = CTimeSig(sigTime.Numerator, 1 << sigTime.Denominator);
+	// add key signature to parameters, unless first measure is already specified
+	CKeySigChange	chgKeySig(1, sigKey.SharpsOrFlats, sigKey.IsMinor != 0);
+	if (m_params.m_arrKeySig.IsEmpty() || m_params.m_arrKeySig[0].m_nMeasure > 1) {
+		m_params.m_arrKeySig.InsertAt(0, chgKeySig);
+	}
+	// add time signature to parameters, unless first measure is already specified
+	CTimeSigChange	chgTimeSig(1, sigTime.Numerator, 1 << sigTime.Denominator);
+	if (m_params.m_arrTimeSig.IsEmpty() || m_params.m_arrTimeSig[0].m_nMeasure > 1) {
+		m_params.m_arrTimeSig.InsertAt(0, chgTimeSig);
+	}
+	// add tempo to parameters, unless first measure is already specified
+	int	nLilyTempo = Round(CMidiFile::MICROS_PER_MINUTE / double(nTempo));	// LilyPond tempo is integer
+	CTempoChange	chgTempo(1, 4, 0, nLilyTempo);	// quarter notes per minute
+	if (m_params.m_arrTempo.IsEmpty() || m_params.m_arrTempo[0].m_nMeasure > 1) {
+		m_params.m_arrTempo.InsertAt(0, chgTempo);
+	}
 	if (IsLogging(LOG_MIDI_FILE_INFO)) {
 		_tprintf(_T("Tracks = %d\nTimebase = %d\nTempo = %d\nKeySig = %s\nTimeSig = %s\n"), 
-			arrTrack.GetSize(), m_nTimebase, m_nTempo, 
-			m_keySigInit.Format().GetString(), m_timeSig.Format().GetString());
+			arrTrack.GetSize(), m_nTimebase, nLilyTempo, 
+			chgKeySig.Format().GetString(), chgTimeSig.Format().GetString());
 	}
 	OnMidiFileRead(arrTrack);
 	int	nTracks = arrTrack.GetSize();
@@ -606,7 +512,7 @@ CString	CMidiToLily::FormatItem(const CItem& item, bool bPrevItemTied) const
 	}
 	CString	sTie(item.m_bIsTied ? _T("~") : _T(""));
 	CString	sDur;
-	sDur.Format(_T("%d"), item.m_nLilyDur);
+	sDur.Format(_T("%d"), item.m_nDenom);
 	for (int iDot = 0; iDot < item.m_nDots; iDot++) {
 		sDur += '.';
 	}
@@ -619,7 +525,7 @@ bool CMidiToLily::GetLilyDuration(CItem& item, bool bNoThrow) const
 	ASSERT(item.m_nDur);
 	int	nWhole = m_nTimebase * 4;	// start with whole note
 	if (!(nWhole % item.m_nDur)) {	// if duration divides evenly
-		item.m_nLilyDur = static_cast<WORD>(nWhole / item.m_nDur);	// most likely case
+		item.m_nDenom = static_cast<WORD>(nWhole / item.m_nDur);	// most likely case
 		return true;
 	}
 	// duration not found above; try dotted values
@@ -628,7 +534,7 @@ bool CMidiToLily::GetLilyDuration(CItem& item, bool bNoThrow) const
 		int	nDotWhole = nWhole - (m_nTimebase >> iDot);
 		if (!(nDotWhole % item.m_nDur)) {	// if duration divides evenly
 			item.m_nDots = static_cast<BYTE>(iDot + 1);
-			item.m_nLilyDur = static_cast<WORD>(nDotWhole / item.m_nDur * 2);
+			item.m_nDenom = static_cast<WORD>(nDotWhole / item.m_nDur * 2);
 			return true;
 		}
 	}
@@ -698,13 +604,13 @@ void CMidiToLily::CalcDurations(CItemArray& arrMeasure) const
 		CItem&	item = arrMeasure[iItem];
 		if (item.m_nDur) {
 			GetLilyDuration(item);
-			if (!(item.m_nLilyDur % 3)) {	// if triplet duration
+			if (!(item.m_nDenom % 3)) {	// if triplet duration
 				if (item.m_nDots) {
 					CString	sErrMsg;
 					sErrMsg.Format(IDS_ERR_DOT_WITHIN_TRIPLET, m_iTrack, m_iMeasure + 1);
 					OnError(sErrMsg);
 				}
-				item.m_nLilyDur = static_cast<WORD>(Round(item.m_nLilyDur * (2.0 / 3.0)));
+				item.m_nDenom = static_cast<WORD>(Round(item.m_nDenom * (2.0 / 3.0)));
 				item.m_bIsTuplet = true;
 			}
 		}
@@ -756,9 +662,9 @@ void CMidiToLily::AddScheduledItems(CString& sMeasure, int nTime)
 	int	iTrack = m_iTrack;
 	int	nOttavaTracks = m_params.m_arrOttavaArray.GetSize();
 	if (iTrack < nOttavaTracks) {	// if track within ottava track range
-		const CParams::COttavaArray&	arrOttava = m_params.m_arrOttavaArray[iTrack];
+		const COttavaArray&	arrOttava = m_params.m_arrOttavaArray[iTrack];
 		if (m_iOttava < arrOttava.GetSize()) {	// if ottava index is within track's ottava array
-			const CParams::COttava&	ot = arrOttava[m_iOttava];
+			const COttava&	ot = arrOttava[m_iOttava];
 			if (m_iMeasure >= ot.m_nMeasure - 1) {	// if ottava's measure is due
 				// compute ottava's time in ticks relative to start of measure
 				int	nOttavaTime = (ot.m_nBeat - 1) * m_nTimebase + ot.m_nTick;
@@ -768,7 +674,7 @@ void CMidiToLily::AddScheduledItems(CString& sMeasure, int nTime)
 					sMeasure += _T("\\ottava #") + sOttava + ' ';
 					if (IsLogging(LOG_SCHEDULED_ITEMS)) {
 						_tprintf(_T("%s ottava %d\n"), 
-							ot.FormatTime().GetString(), ot.m_nShift);
+							ot.Format().GetString(), ot.m_nShift);
 					}
 					m_iOttava++;
 				}
@@ -832,11 +738,23 @@ void CMidiToLily::FormatMeasure(CString& sMeasure, const CItemArray& arrMeasure,
 bool CMidiToLily::OnNewMeasure(CStdioFile& fLily)
 {
 	bool	bIsTimeChange = false;
+	if (m_iKeySig < m_params.m_arrKeySig.GetSize()) {	// if key signatures remain
+		const CKeySigChange& ksc = m_params.m_arrKeySig[m_iKeySig];
+		if (m_iMeasure >= ksc.m_nMeasure - 1) {	// if next key change is due
+			const CKeySig&	keySig = ksc;	// upcast
+			m_keySig = keySig;	// update member var
+			m_iKeySig++;	// bump index
+			fLily.WriteString(_T("  \\key ") + ksc.FormatLily() + '\n');
+			if (IsLogging(LOG_SCHEDULED_ITEMS)) {
+				_tprintf(_T("%d: key %s\n"), ksc.m_nMeasure, ksc.Format().GetString());
+			}
+		}
+	}
 	if (m_iTimeSig < m_params.m_arrTimeSig.GetSize()) {	// if time signatures remain
-		const CParams::CTimeSigChange& tsc = m_params.m_arrTimeSig[m_iTimeSig];
+		const CTimeSigChange& tsc = m_params.m_arrTimeSig[m_iTimeSig];
 		if (m_iMeasure >= tsc.m_nMeasure - 1) {	// if next time change is due
-			const CTimeSig&	ts = tsc;	// upcast
-			m_timeSig = ts;	// update member var
+			const CTimeSig&	timeSig = tsc;	// upcast
+			m_timeSig = timeSig;	// update member var
 			m_iTimeSig++;	// bump index
 			CString	sTimeSig(tsc.Format());
 			fLily.WriteString(_T("  \\time ") + sTimeSig + '\n');
@@ -846,15 +764,16 @@ bool CMidiToLily::OnNewMeasure(CStdioFile& fLily)
 			bIsTimeChange = true;
 		}
 	}
-	if (m_iKeySig < m_params.m_arrKeySig.GetSize()) {	// if key signatures remain
-		const CParams::CKeySigChange& ksc = m_params.m_arrKeySig[m_iKeySig];
-		if (m_iMeasure >= ksc.m_nMeasure - 1) {	// if next key change is due
-			const CKeySig&	ks = ksc;	// upcast
-			m_keySig = ks;	// update member var
-			m_iKeySig++;	// bump index
-			fLily.WriteString(_T("  \\key ") + ksc.FormatLily() + '\n');
+	if (m_iTempo < m_params.m_arrTempo.GetSize()) {	// if tempo changes remain
+		const CTempoChange& tc = m_params.m_arrTempo[m_iTempo];
+		if (m_iMeasure >= tc.m_nMeasure - 1) {	// if next tempo change is due
+			const CTempo&	tempo = tc;	// upcast
+			m_tempo = tempo;	// update member var
+			m_iTempo++;	// bump index
+			CString	sTempo(tc.Format());
+			fLily.WriteString(_T("  \\tempo ") + sTempo + '\n');
 			if (IsLogging(LOG_SCHEDULED_ITEMS)) {
-				_tprintf(_T("%d: key %s\n"), ksc.m_nMeasure, ksc.Format().GetString());
+				_tprintf(_T("%d: key %s\n"), tc.m_nMeasure, sTempo.GetString());
 			}
 		}
 	}
@@ -984,18 +903,11 @@ CString	CMidiToLily::GetMidiName(DWORD dwMsg) const
 
 void CMidiToLily::WriteTrackHeader(CStdioFile& fLily, int iTrack)
 {
-	CString	sTempo;
-	sTempo.Format(_T("4 = %d"), m_nTempo);
-	CString	sClef(GetClefString(iTrack));
-	CString	sHeader;
-	sHeader = GetTrackVarName(iTrack) + _T(" = \\absolute {\n");	// absolute pitch
-	if (!m_params.m_arrKeySig.GetSize() || m_params.m_arrKeySig[0].m_nMeasure > 1)
-		sHeader += _T("  \\key ") + m_keySigInit.FormatLily() + '\n';
-	if (!m_params.m_arrTimeSig.GetSize() || m_params.m_arrTimeSig[0].m_nMeasure > 1)
-		sHeader += _T("  \\time ") + m_timeSigInit.Format() + '\n';
-	sHeader += _T("  \\tempo ") + sTempo + '\n';
-	sHeader += _T("  \\clef \"") + sClef + _T("\"\n");
+	CString	sHeader(GetTrackVarName(iTrack) + _T(" = \\absolute {\n"));	// absolute pitch
 	fLily.WriteString(sHeader);
+	OnNewMeasure(fLily);	// write initial scheduled items
+	CString	sClef(_T("  \\clef \"") + GetClefString(iTrack) + _T("\"\n"));
+	fLily.WriteString(sClef);
 }
 
 void CMidiToLily::WriteBookHeader(CStdioFile& fLily)

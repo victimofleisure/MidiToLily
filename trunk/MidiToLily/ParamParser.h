@@ -10,6 +10,7 @@
         00		08dec23	initial version
 		01		27dec24	add subtitle, opus, piece and staves params
 		02		06jan25	add time and key signature params
+		03		09jan25	add tempo param
  
 */
 
@@ -17,7 +18,7 @@
 
 #include "MidiToLily.h"
 
-class CParamParser : public CCommandLineInfo, public CMidiToLily::CParams {
+class CParamParser : public CCommandLineInfo, public CParams {
 public:
 // Construction
 	CParamParser();
@@ -35,7 +36,6 @@ public:
 
 // Operations
 	bool	ParseCommandLine();
-	static	bool	IsPowerOfTwo(int n);
 	static	CString	GetAppVersionString();
 	static	void	ShowAppVersion();
 	static	void	ShowLicense();
@@ -64,6 +64,11 @@ protected:
 
 // Helpers
 	static	void	OnError(CString sErrMsg);
+	LPCTSTR	GetCurFlagName() const;
+	int		FindSeparator(CString sToken, TCHAR cSeparator, int iStart = 0);
+	bool	ParseInt(CString sToken, int& nResult, int nMinVal = INT_MIN, int nMaxVal = INT_MAX) const;
+	int		ParseTrackIndex(CString sToken);
+	int		ParseMeasureNumber(CString sToken);
 	void	OnQuant(CString sParam, int& nDuration);
 	void	OnOffset(CString sParam);
 	void	OnClef(CString sParam);
@@ -72,6 +77,7 @@ protected:
 	void	OnStaves(CString sParam);
 	void	OnTimeSignature(CString sParam);
 	void	OnKeySignature(CString sParam);
+	void	OnTempo(CString sParam);
 	void	OnLogging(CString sParam);
 	static	CString	UnpackHelp(CString& sParam, int nParamHelpResID, bool bArgumentUpperCase = true);
 	static	void	ShowParamHelp(LPCTSTR pszParamName, int nParamHelpResID, bool bArgumentUpperCase = true);
