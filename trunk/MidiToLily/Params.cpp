@@ -154,6 +154,45 @@ bool CParamBase::IsPowerOfTwo(int n)
 	return (n & (n - 1)) == 0;
 }
 
+void CParamBase::RenameExtension(CString& sPath, CString sExtension)
+{
+	LPTSTR pszPath = sPath.GetBuffer(sPath.GetLength() + sExtension.GetLength());
+	PathRemoveExtension(pszPath);
+	PathAddExtension(pszPath, sExtension);
+	sPath.ReleaseBuffer();
+}
+
+void CParamBase::RemoveExtension(CString& sPath)
+{
+	LPTSTR pszPath = sPath.GetBuffer(sPath.GetLength());
+	PathRemoveExtension(pszPath);
+	sPath.ReleaseBuffer();
+}
+
+void CParamBase::RemoveFileSpec(CString& sPath)
+{
+	LPTSTR pszPath = sPath.GetBuffer(sPath.GetLength());
+	PathRemoveFileSpec(pszPath);
+	sPath.ReleaseBuffer();
+}
+
+bool CParamBase::PathsDiffer(LPCTSTR pszInPath, LPCTSTR pszOutPath)
+{
+	CString	sInFilename(PathFindFileName(pszInPath));
+	CString	sOutFilename(PathFindFileName(pszOutPath));
+	RemoveExtension(sInFilename);
+	RemoveExtension(sOutFilename);
+	if (sInFilename.CompareNoCase(sOutFilename))	// if file names differ
+		return true;
+	CString	sInFolder(pszInPath);
+	CString	sOutFolder(pszOutPath);
+	RemoveFileSpec(sInFolder);
+	RemoveFileSpec(sOutFolder);
+	if (sInFolder.CompareNoCase(sOutFolder))	// if folders differ
+		return true;
+	return false;	// paths don't differ
+}
+
 CParams::CParams()
 {
 	m_bFrenched = false;

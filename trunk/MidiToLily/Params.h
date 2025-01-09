@@ -112,7 +112,11 @@ public:
 		int		m_nMeasure;		// one-based measure number at which change occurs
 	};
 	typedef CArrayEx<CTempoChange, CTempoChange&> CTempoChangeArray;
-	static	bool	IsPowerOfTwo(int n);
+	static bool	IsPowerOfTwo(int n);
+	static void	RenameExtension(CString& sPath, CString sExtension);
+	static void	RemoveExtension(CString& sPath);
+	static void	RemoveFileSpec(CString& sPath);
+	static bool	PathsDiffer(LPCTSTR pszInPath, LPCTSTR pszOutPath);
 };
 
 inline CParamBase::CMbtTime::CMbtTime(int nMeasure, int nBeat, int nTick)

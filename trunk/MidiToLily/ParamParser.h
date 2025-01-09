@@ -16,7 +16,7 @@
 
 #pragma once
 
-#include "MidiToLily.h"
+#include "Params.h"
 
 class CParamParser : public CCommandLineInfo, public CParams {
 public:
@@ -78,6 +78,7 @@ protected:
 	void	OnTimeSignature(CString sParam);
 	void	OnKeySignature(CString sParam);
 	void	OnTempo(CString sParam);
+	void	OnParams(CString sParam);
 	void	OnLogging(CString sParam);
 	static	CString	UnpackHelp(CString& sParam, int nParamHelpResID, bool bArgumentUpperCase = true);
 	static	void	ShowParamHelp(LPCTSTR pszParamName, int nParamHelpResID, bool bArgumentUpperCase = true);

@@ -18,6 +18,7 @@
 #include "ParamParser.h"
 #include "MidiToLily.h"	// for throw exception method
 #include "VersionInfo.h"
+#include "StdioFileUTF.h"
 #include "Note.h"
 
 extern CWinApp theApp;
@@ -239,6 +240,26 @@ void CParamParser::OnTempo(CString sParam)
 	}
 }
 
+void CParamParser::OnParams(CString sParam)
+{
+	m_iFlag = FLAG_NONE;	// flag is no longer pending
+	CStdioFileUTF	fIn(sParam, CFile::modeRead);
+	CString	sIn;
+	while (fIn.ReadString(sIn)) {
+		CString	sToken;
+		int	iStart = 0;
+		while (!(sToken = sIn.Tokenize(_T(" "), iStart)).IsEmpty()) {
+			LPCTSTR	pszToken = sToken;
+			bool	bFlag = false;
+			if (pszToken[0] == '-' || pszToken[0] == '/') {
+				bFlag = TRUE;
+				pszToken++;	// remove flag specifier
+			}
+			ParseParam(pszToken, bFlag, false);
+		}
+	}
+}
+
 void CParamParser::OnLogging(CString sParam)
 {
 	if (sParam == '*') {	// if parameter is wildcard
@@ -259,7 +280,6 @@ void CParamParser::OnLogging(CString sParam)
 
 void CParamParser::ParseParam(const TCHAR* pszParam, BOOL bFlag, BOOL bLast)
 {
-	UNREFERENCED_PARAMETER(bLast);
 	if (bFlag) {	// if caller passed us a flag 
 		// integer parameters can be negative, but caller eats dashes
 		switch (m_iFlag) {	// if processing one of the following flags
@@ -357,6 +377,9 @@ ParseParamEval:
 			break;
 		case F_tempo:
 			OnTempo(pszParam);
+			break;
+		case F_params:
+			OnParams(pszParam);
 			break;
 		case F_logging:
 			OnLogging(pszParam);

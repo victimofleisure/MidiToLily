@@ -22,7 +22,7 @@
 #include "Midi.h"
 #include "MidiFile.h"
 #include "BoundArray.h"
-#include "Params.h"
+#include "ParamParser.h"
 
 class CMidiToLily : public CParamBase {
 public:
@@ -43,14 +43,13 @@ public:
 // Attributes
 	int		GetTrackCount() const;
 	WORD	GetTimebase() const;
-	void	GetParams(CParams& params) const;
-	void	SetParams(const CParams& params);
 	bool	IsLogging() const;
 	bool	IsLogging(int iLoggingType) const;
 	static	LPCTSTR	GetLoggingTypeName(int iLoggingType);
 
 // Operations
 	static	void	OnError(CString sErrMsg);
+	int		Process(LPCTSTR pszInPath);
 	void	ReadMidiFile(LPCTSTR pszMidiFilePath);
 	void	RemoveOverlaps();
 	void	LogEvents() const;
@@ -110,7 +109,7 @@ protected:
 	static const LPCTSTR	m_arrLoggingTypeName[LOGGING_TYPES];
 
 // Member data
-	CParams	m_params;		// command-line parameters
+	CParamParser	m_params;	// command-line parser and parameters
 	CTrackArray	m_arrTrack;	// array of tracks
 	CStringArrayEx	m_arrTrackName;	// array of track names
 	WORD	m_nTimebase;	// timebase in ticks
@@ -184,9 +183,4 @@ inline int CMidiToLily::GetTrackCount() const
 inline WORD CMidiToLily::GetTimebase() const
 {
 	return m_nTimebase;
-}
-
-inline void CMidiToLily::GetParams(CParams& params) const
-{
-	params = m_params;
 }

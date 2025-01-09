@@ -119,14 +119,6 @@ void CMidiToLily::OnError(CString sErrMsg)
 	THROW(new CMyException(sErrMsg));
 }
 
-void CMidiToLily::SetParams(const CParams& params)
-{
-	m_params = params;
-	if (IsLogging()) {
-		CParamParser::ShowAppVersion();
-	}
-}
-
 CString	CMidiToLily::GetTrackVarName(int iTrack)
 {
 	CString	sTrackNum;
@@ -1025,7 +1017,8 @@ void CMidiToLily::VerifyLilyMidi(LPCTSTR pszLilyMidiFilePath)
 	}
 	DumpEvents(pszInEventPath, 90, true);	// override note velocities with LilyPond default velocity, and use staves
 	CMidiToLily	lily;
-	lily.SetParams(m_params);
+	CParams&	params = lily.m_params;	// upcast
+	params = m_params;	// copy parameters
 	// if staves are specified, LilyPond MIDI file can have fewer tracks than input MIDI file, due to filtering
 	lily.m_params.m_arrClef.FastRemoveAll();	// avoid track index range errors in OnMidiFileRead
 	lily.m_params.m_arrOttavaArray.FastRemoveAll();
@@ -1050,16 +1043,54 @@ void CMidiToLily::VerifyLilyMidi(LPCTSTR pszLilyMidiFilePath)
 	_tprintf(LDS(IDS_MSG_MIDI_VERIFIED) + '\n');
 }
 
-static void RenameExtension(CString& sPath, CString sExtension)
+#define WRITE_HELP_MARKDOWN_FILE 0	// set non-zero to write help Markdown file
+
+int CMidiToLily::Process(LPCTSTR pszInPath)
 {
-	LPTSTR pszPath = sPath.GetBuffer(sPath.GetLength() + sExtension.GetLength());
-	PathRemoveExtension(pszPath);
-	PathAddExtension(pszPath, sExtension);
-	sPath.ReleaseBuffer();
+	if (!m_params.ParseCommandLine()) {	// if parser wants us to exit
+		return 0;
+	}
+	if (pszInPath == NULL) {	// if not enough arguments
+#if WRITE_HELP_MARKDOWN_FILE
+		m_params.WriteHelpMarkdown(_T("help.txt"));
+#endif
+		m_params.ShowHelp();	// show help and exit
+		return 0;
+	}
+	if (IsLogging()) {
+		CParamParser::ShowAppVersion();
+	}
+	CString	sLilyFilePath;
+	if (!m_params.m_sOutput.IsEmpty()) {	// if output file specified
+		if (!PathsDiffer(pszInPath, m_params.m_sOutput)) {	// if input and output paths collide
+			// LilyPond-generated MIDI file would overwrite our input MIDI file
+			CMidiToLily::OnError(LDS(IDS_ERR_PATH_COLLISION));	// so prevent that
+		}
+		sLilyFilePath = m_params.m_sOutput;
+	} else {	// output file not specified
+		// use input MIDI file path, but replace extension with LilyPond's;
+		// append suffix to file name to avoid overwriting input MIDI file
+		sLilyFilePath = pszInPath;	
+		RenameExtension(sLilyFilePath, _T(" [lily].ly"));	
+	}
+	ReadMidiFile(pszInPath);
+	RemoveOverlaps();
+//	DumpEvents();
+	if (m_params.m_bVerify) {	// if verifying
+		CString	sLilyMidiFilePath(sLilyFilePath);
+		RenameExtension(sLilyMidiFilePath, _T(".mid"));
+		VerifyLilyMidi(sLilyMidiFilePath);
+	} else {	// normal operation
+		WriteLily(sLilyFilePath);
+	}
+	_tprintf(LDS(IDS_MSG_ALL_GOOD) + '\n');
+	return 0;	// success
 }
 
 int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 {
+	UNREFERENCED_PARAMETER(argc);
+	UNREFERENCED_PARAMETER(argv);
 	UNREFERENCED_PARAMETER(envp);
 	HMODULE hModule = ::GetModuleHandle(NULL);
 	if (hModule == NULL) {
@@ -1072,36 +1103,8 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 	}
 	int	bRetVal = 0;
 	TRY {
-		CParamParser	parser;
-		if (!parser.ParseCommandLine()) {	// if parser wants us to exit
-			return 0;
-		}
-		if (argc < 2) {	// if not enough arguments
-//			parser.WriteHelpMarkdown(_T("help.txt"));	// uncomment to write GitHub ReadMe
-			parser.ShowHelp();	// show help and exit
-			return 0;
-		}
-		CString	sLilyFilePath;
-		if (!parser.m_sOutput.IsEmpty()) {	// if output file specified
-			sLilyFilePath = parser.m_sOutput;
-		} else {	// output file not specified
-			// use input MIDI file path, but replace extension with LilyPond's;
-			// append suffix to file name to avoid overwriting input MIDI file
-			sLilyFilePath = argv[1];	
-			RenameExtension(sLilyFilePath, _T(" [lily].ly"));	
-		}
 		CMidiToLily	lily;
-		lily.SetParams(parser);
-		lily.ReadMidiFile(argv[1]);
-		lily.RemoveOverlaps();
-//		lily.DumpEvents();
-		if (parser.m_bVerify) {	// if verifying
-			CString	sLilyMidiFilePath(sLilyFilePath);
-			RenameExtension(sLilyMidiFilePath, _T(".mid"));
-			lily.VerifyLilyMidi(sLilyMidiFilePath);
-		} else {	// normal operation
-			lily.WriteLily(sLilyFilePath);
-		}
+		bRetVal = lily.Process(argv[1]);
 	}
 	CATCH (CException, e) {
 		TCHAR	szMsg[MAX_PATH];
@@ -1112,8 +1115,5 @@ int _tmain(int argc, TCHAR* argv[], TCHAR* envp[])
 		bRetVal = 1;	// return failure
 	}
 	END_CATCH
-	if (!bRetVal) {
-		_tprintf(LDS(IDS_MSG_ALL_GOOD) + '\n');
-	}
 	return bRetVal;
 }

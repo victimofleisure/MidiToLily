@@ -58,6 +58,7 @@ PARAMDEF(tempo)		// Comma-separated list of tempos, each consisting of M=T
 					// where M is a one-based measure number and T is a tempo.
 					// The tempo can be a metronome mark, a description, or both.
 					// If the tempo list contains spaces, enclose it in quotes.
+PARAMDEF(params)	// Read parameters from the specified text file.
 PARAMDEF(help)      // Display the help.
 PARAMDEF(license)   // Display the license.
 PARAMDEF(logging)   // Enables various types of logging; specify * to enable all
