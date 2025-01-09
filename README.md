@@ -84,7 +84,7 @@ lilypond "mysong [lily].ly"
 MidiToLily mysong.mid /quant 16 /triplet 16 /verify
 ```
 
-If you're specifying many parameters, instead of editing one very long command line, you may find it more convenient to put your parameters in a text file. Pass the text file to MidiToLily via the -params parameter, like this:
+If you're specifying many parameters, instead of editing a long command line, you may prefer to put your parameters in a text file. Pass the text file to MidiToLily via the -params parameter, like so:
 
 ```
 MidiToLily mysong.mid -params myparams.txt
