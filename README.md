@@ -79,9 +79,9 @@ If your tracks aren't shown in the desired order, you can use the staves paramet
 Here's an example of MIDI verification, by running MidiToLily again after LilyPond runs. For the verify pass, cosmetic parameters like title and composer can be omitted.
 
 ```
-MidiToLily mysong.mid /quant 16 /triplet 16 /title "My Song" /composer "My Name"
+MidiToLily mysong.mid -quant 16 -triplet 16 -title "My Song" -composer "My Name"
 lilypond "mysong [lily].ly"
-MidiToLily mysong.mid /quant 16 /triplet 16 /verify
+MidiToLily mysong.mid -quant 16 -triplet 16 -verify
 ```
 
 If you're specifying many parameters, instead of editing a long command line, you may prefer to put your parameters in a text file. That way each parameter can be on its own line, which is easier to read and edit. Pass your text file to MidiToLily via the -params parameter, like so:
