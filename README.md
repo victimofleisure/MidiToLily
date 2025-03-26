@@ -95,7 +95,6 @@ MidiToLily mysong.mid -params myparams.txt
 MidiToLily is written in C++ using MFC. It compiles cleanly in Visual Studio 2012 and 2019. MidiToLily does what I need it to do, but undoubtedly it could be improved. Enhancements I'm considering include:
 
 * Fix issues with time signature denominators other than 4
-* Add a tempo change parameter
 * Better triplet handling; current implementation fails in various corner cases
 
 # Links
