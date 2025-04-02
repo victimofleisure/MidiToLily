@@ -8,6 +8,7 @@
 		revision history:
 		rev		date	comments
         00		09jan25	initial version
+		01		02apr25	fix tempo without unit
  
 */
 
@@ -85,34 +86,33 @@ CString CParamBase::CMetroMark::Format() const
 
 bool CParamBase::CMetroMark::Scan(CString sMark, int* piFirstChar)
 {
-	CMetroMark	mm;
 	if (piFirstChar != NULL)	// if caller requested index of mark's first character
 		*piFirstChar = 0;	// safety first
+	CMetroMark	mm(4, 0, 120);	// default to quarter note = 120
 	int	iSeparator = sMark.ReverseFind('=');	// reverse find separator
-	if (iSeparator < 1)	// if separator not found or is first character
-		return false;	// can't proceed
-	int	iChar = iSeparator;	// reverse iterate from separator
-	while (iChar > 0 && sMark[iChar - 1] == ' ') {	// skip spaces
-		iChar--;
+	if (iSeparator >= 0) {	// if separator found
+		int	iChar = iSeparator;	// reverse iterate from separator
+		while (iChar > 0 && sMark[iChar - 1] == ' ') {	// skip spaces
+			iChar--;
+		}
+		while (iChar > 0 && sMark[iChar - 1] == '.') {	// skip periods
+			iChar--;
+			mm.m_nDots++;	// count dots
+		}
+		while (iChar > 0 && isdigit(sMark[iChar - 1])) {	// skip digits
+			iChar--;
+		}
+		// iChar should now be index of denominator's first digit
+		if (piFirstChar != NULL)	// if caller requested index of mark's first character
+			*piFirstChar = iChar;	// pass index back to caller
+		// must use h prefix because denominator is 16-bit, else dots get clobbered
+		if (_stscanf_s(sMark.Mid(iChar), _T("%hd"), &mm.m_nDenom) != 1)	// scan denominator
+			return false;	// couldn't scan denominator
+		if (!IsPowerOfTwo(mm.m_nDenom))	// if denominator isn't a power of two
+			return false;
 	}
-	mm.m_nDots = 0;	// reset dots
-	while (iChar > 0 && sMark[iChar - 1] == '.') {	// skip periods
-		iChar--;
-		mm.m_nDots++;	// count dots
-	}
-	while (iChar > 0 && isdigit(sMark[iChar - 1])) {	// skip digits
-		iChar--;
-	}
-	// iChar should now be index of denominator's first digit
-	if (piFirstChar != NULL)	// if caller requested index of mark's first character
-		*piFirstChar = iChar;	// pass index back to caller
 	CString	sBPM(sMark.Mid(iSeparator + 1));
 	if (_stscanf_s(sBPM.GetString(), _T("%d"), &mm.m_nBPM) != 1)	// scan beats per minute
-		return false;
-	// must use h prefix because denominator is 16-bit, else dots get clobbered
-	if (_stscanf_s(sMark.Mid(iChar), _T("%hd"), &mm.m_nDenom) != 1)	// scan denominator
-		return false;
-	if (!IsPowerOfTwo(mm.m_nDenom))	// if denominator isn't a power of two
 		return false;
 	*this = mm;	// set members
 	return true;
@@ -135,7 +135,8 @@ CString CParamBase::CTempo::Format() const
 
 bool CParamBase::CTempo::Scan(CString sTempo)
 {
-	CMetroMark	mm;
+	m_nDenom = 0;	// for safety
+	CMetroMark	mm(4, 0, 120);	// default to quarter note = 120
 	int	iMetroStart;
 	if (mm.Scan(sTempo, &iMetroStart)) {	// if valid metronome mark
 		CMetroMark&	base = *this;
