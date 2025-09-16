@@ -13,6 +13,7 @@
 		03		06jan25	add time and key signature params
 		04		08jan25	add scan MBT time
 		05		09jan25	add tempo param
+		06		16sep25	fix comment only
  
 */
 
@@ -286,7 +287,7 @@ void CMidiToLily::PrepareMidiEvents(int iTrack, const CMidiFile::CMidiEventArray
 
 void CMidiToLily::OnMidiFileRead(CMidiFile::CMidiTrackArray& arrTrack)
 {
-	int	nTracks = arrTrack.GetSize();	// only type 0 MIDI file is supported
+	int	nTracks = arrTrack.GetSize();	// only type 1 MIDI file is supported
 	if (nTracks < 2) {	// at least two tracks, with tempo map in first track
 		OnError(LDS(IDS_CLA_TOO_FEW_TRACKS));
 	}

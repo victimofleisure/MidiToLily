@@ -68,7 +68,7 @@ If you're sure your file doesn't contain triplets, you can omit the triplet para
 
 # Tips
 
-Only type 0 MIDI files are supported, and the first track is reserved for the tempo map.
+Only type 1 MIDI files are supported, and the first track is reserved for the tempo map.
 
 Track indices are zero-based, but since the tempo map is track zero, the first track with *note events* is track one. The valid range of a track index in a command line parameter is from one to the number of tracks in the MIDI file.
 
