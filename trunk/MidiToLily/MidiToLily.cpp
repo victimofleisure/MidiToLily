@@ -385,15 +385,15 @@ void CMidiToLily::DumpEvents(LPCTSTR pszPath, int nVelocityOverride, bool bUseSt
 	}
 	int	nTracks;
 	if (bUseStaves) {	// if iterating staves instead of tracks
-		nTracks = m_params.m_arrStave.GetSize() + 1;	// account for tempo track
+		nTracks = m_params.m_arrStave.GetSize() + m_iFirstNoteTrack;	// account for tempo track
 	} else {	// no staves
 		nTracks = m_arrTrack.GetSize();
 	}
 	CString	sLine;
-	for (int iTrack = m_iFirstNoteTrack; iTrack < nTracks; iTrack++) {	// for each track, excluding tempo track
+	for (int iTrack = m_iFirstNoteTrack; iTrack < nTracks; iTrack++) {	// for each note track
 		int	iSrcTrack;
 		if (bUseStaves) {	// if iterating staves
-			iSrcTrack = m_params.m_arrStave[iTrack - 1];	// map stave to track; account for tempo track
+			iSrcTrack = m_params.m_arrStave[iTrack - m_iFirstNoteTrack];	// map stave to track; account for tempo track
 		} else {	// no staves
 			iSrcTrack = iTrack;	// no mapping
 		}
@@ -948,6 +948,15 @@ void CMidiToLily::WriteScoreHeader(CStdioFile& fLily)
 	}
 }
 
+inline int CMidiToLily::GetStaveTrack(int iStave) const
+{
+	if (!m_params.m_arrStave.IsEmpty()) {	// if staves specified
+		return m_params.m_arrStave[iStave];
+	} else {	// no staves
+		return iStave + m_iFirstNoteTrack;	// account for tempo track
+	}
+}
+
 void CMidiToLily::WriteLily(LPCTSTR pszOutputFilePath)
 {
 	if (IsLogging()) {
@@ -961,7 +970,7 @@ void CMidiToLily::WriteLily(LPCTSTR pszOutputFilePath)
 		_T("\\language \"english\"\n"));	// select English accidentals (s, f)
 	WriteBookHeader(fLily);
 	int	nTracks = m_arrTrack.GetSize();
-	for (int iTrack = m_iFirstNoteTrack; iTrack < nTracks; iTrack++) {	// for each track, excluding tempo track
+	for (int iTrack = m_iFirstNoteTrack; iTrack < nTracks; iTrack++) {	// for each note track
 		ResetTrackData();	// do first; order matters
 		m_iTrack = iTrack;	// for error reporting
 //		DumpNotes(iTrack);
@@ -982,23 +991,13 @@ void CMidiToLily::WriteLily(LPCTSTR pszOutputFilePath)
 		nStaves = m_arrTrack.GetSize() - m_iFirstNoteTrack;
 	}
 	for (int iStave = 0; iStave < nStaves; iStave++) {	// for each stave
-		int	iTrack;
-		if (!m_params.m_arrStave.IsEmpty()) {	// if staves specified
-			iTrack = m_params.m_arrStave[iStave];
-		} else {	// no staves
-			iTrack = iStave + 1;
-		}
+		int	iTrack = GetStaveTrack(iStave);
 		if (iStave < m_params.m_arrCombine.GetSize()) {
 			int	iMate = m_params.m_arrCombine[iStave];
 			if (iMate >= 0) {	// if stave is combined with another
 				ASSERT(iMate != iStave);	// can't self-combine
 				if (iMate > iStave) {	// if first stave of pair
-					int	iMateTrack;
-					if (!m_params.m_arrStave.IsEmpty()) {	// if staves specified
-						iMateTrack = m_params.m_arrStave[iMate];
-					} else {	// no staves
-						iMateTrack = iMate + 1;
-					}
+					int	iMateTrack = GetStaveTrack(iMate);
 					fLily.WriteString(_T("  \\new Staff \\partCombine \\") 
 						+ GetTrackVarName(iTrack) + _T(" \\") 
 						+ GetTrackVarName(iMateTrack) + '\n');

@@ -192,10 +192,10 @@ void CParamParser::OnCombine(CString sParam)
 	int	iStart = 0;
 	while (!(sToken = sParam.Tokenize(_T(","), iStart)).IsEmpty()) {
 		int	iSeparator = FindSeparator(sToken, '_');	// find separator
-		// stave numbers are one-based, but stave indices are zero-based
-		int	iStave0 = ParseStaveNumber(sToken.Left(iSeparator)) - 1;
+		// stave numbers are one-based, whereas stave indices are zero-based
+		int	iStave0 = ParseStaveNumber(sToken.Left(iSeparator)) - 1;	// convert to index
 		int	iStave1 = ParseStaveNumber(sToken.Mid(iSeparator + 1)) - 1;
-		if (iStave0 == iStave1) {	// if stave combined with itself
+		if (iStave0 == iStave1) {	// if stave is combined with itself
 			m_sErrMsg.Format(IDS_CLA_BAD_STAVE_NUMBER, GetCurFlagName(), sToken.GetString());
 			OnError(m_sErrMsg);
 		}
@@ -204,9 +204,9 @@ void CParamParser::OnCombine(CString sParam)
 		int	nNewCombs = max(nOldCombs, iStaveMax + 1);
 		m_arrCombine.FastSetSize(nNewCombs);
 		for (int iComb = nOldCombs; iComb < nNewCombs; iComb++) {	// for each new element
-			m_arrCombine[iComb] = -1;	// init to -1 meaning stave isn't combined
+			m_arrCombine[iComb] = -1;	// init to -1 indicating that stave isn't combined
 		}
-		m_arrCombine[iStave0] = iStave1;	// cross-link pair of combined staves
+		m_arrCombine[iStave0] = iStave1;	// doubly-linked pair of combined staves
 		m_arrCombine[iStave1] = iStave0;
 	}
 }

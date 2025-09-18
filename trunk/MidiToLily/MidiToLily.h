@@ -156,6 +156,7 @@ protected:
 	void	WriteScoreHeader(CStdioFile& fLily);
 	void	WriteTrackHeader(CStdioFile& fLily, int iTrack);
 	bool	OnNewMeasure(CStdioFile& fLily);
+	int		GetStaveTrack(int iStave) const;
 	CString	GetClefString(int iTrack) const;
 	CString	GetMidiName(DWORD dwMsg) const;
 };
