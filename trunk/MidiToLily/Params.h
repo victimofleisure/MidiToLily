@@ -8,6 +8,7 @@
 		revision history:
 		rev		date	comments
         00		09jan25	initial version
+		01		17sep25	add combine param
  
 */
 
@@ -306,6 +307,7 @@ public:
 	CIntArrayEx	m_arrSection;	// array of sections; each item is a one-based measure number
 	COttavaArrayArray	m_arrOttavaArray;	// one array of ottava arrays per track
 	CIntArrayEx	m_arrStave;	// array of track indices specifying which tracks are assigned to staves
+	CIntArrayEx	m_arrCombine;	// array specifying for each stave, index of stave it's combined with, or -1 if none
 	CKeySigChangeArray	m_arrKeySig;	// array of key signature changes
 	CTimeSigChangeArray	m_arrTimeSig;	// array of time signature changes
 	CTempoChangeArray	m_arrTempo;		// array of tempo changes

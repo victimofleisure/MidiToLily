@@ -11,6 +11,7 @@
 		01		27dec24	add subtitle, opus, piece and staves params
 		02		06jan25	add time and key signature params
 		03		09jan25	add tempo param
+		04		17sep25	add combine param
  
 */
 
@@ -69,12 +70,14 @@ protected:
 	bool	ParseInt(CString sToken, int& nResult, int nMinVal = INT_MIN, int nMaxVal = INT_MAX) const;
 	int		ParseTrackIndex(CString sToken);
 	int		ParseMeasureNumber(CString sToken);
+	int		ParseStaveNumber(CString sToken);
 	void	OnQuant(CString sParam, int& nDuration);
 	void	OnOffset(CString sParam);
 	void	OnClef(CString sParam);
 	void	OnSection(CString sParam);
 	void	OnOttava(CString sParam);
 	void	OnStaves(CString sParam);
+	void	OnCombine(CString sParam);
 	void	OnTimeSignature(CString sParam);
 	void	OnKeySignature(CString sParam);
 	void	OnTempo(CString sParam);

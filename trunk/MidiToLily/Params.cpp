@@ -9,6 +9,7 @@
 		rev		date	comments
         00		09jan25	initial version
 		01		02apr25	fix tempo without unit
+		02		17sep25	add combine param
  
 */
 
@@ -237,6 +238,10 @@ void CParams::Log() const
 	_tprintf(_T("Staves = %d\n"), m_arrStave.GetSize());
 	for (int iStave = 0; iStave < m_arrStave.GetSize(); iStave++) {
 		_tprintf(_T("Stave %d track = %d\n"), iStave, m_arrStave[iStave]);
+	}
+	_tprintf(_T("Combines = %d\n"), m_arrCombine.GetSize());
+	for (int iComb = 0; iComb < m_arrCombine.GetSize(); iComb++) {
+		_tprintf(_T("Combine %d stave = %d\n"), iComb, m_arrCombine[iComb]);
 	}
 	_tprintf(_T("TimeSigs = %d\n"), m_arrTimeSig.GetSize());
 	for (int iTimeSig = 0; iTimeSig < m_arrTimeSig.GetSize(); iTimeSig++) {

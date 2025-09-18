@@ -12,6 +12,7 @@
 		02		29dec24	add logging of note overlaps
 		03		06jan25	add time and key signature params
 		04		09jan25	add tempo param
+		05		17sep25	add combine param
 
 */
 
@@ -47,6 +48,8 @@ PARAMDEF(ottava)    // Comma-separated list of octave shifts, each consisting of
                     // octaves to transpose the staff by.
 PARAMDEF(staves)	// Comma-separated list of track indices specifying which
 					// tracks are assigned to staves, from top to bottom.
+PARAMDEF(combine)	// comma-separated list of pairs of staves to combine, each
+					// consisting of N_N where N is a one-based stave number.
 PARAMDEF(key)		// Comma-separated list of key signatures, each consisting of
 					// M=k where M is a one-based measure number, and k is the
 					// key signature in LilyPond note format, optionally followed
@@ -74,6 +77,7 @@ HELPEXAMPLEDEF(SECTION)
 HELPEXAMPLEDEF(CLEF)
 HELPEXAMPLEDEF(OTTAVA)
 HELPEXAMPLEDEF(STAVES)
+HELPEXAMPLEDEF(COMBINE)
 HELPEXAMPLEDEF(TIME_SIG)
 HELPEXAMPLEDEF(KEY_SIG)
 HELPEXAMPLEDEF(TEMPO)

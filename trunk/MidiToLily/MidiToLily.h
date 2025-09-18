@@ -13,6 +13,7 @@
 		03		06jan25	add time and key signature params
 		04		08jan25	add scan MBT time
 		05		09jan25	add tempo param
+		06		17sep25	add first note track
  
 */
 
@@ -116,6 +117,7 @@ protected:
 	int		m_nEndTime;		// end time of longest track
 	int		m_nQuantDur;	// regular quantization duration in ticks, or zero if none
 	int		m_nTripletQuantDur;	// triplet quantization duration in ticks, or zero if none
+	int		m_iFirstNoteTrack;	// index of first track with notes, skipping tempo track
 
 // Member data that must be reset before a track is processed
 	CKeySig	m_keySig;		// current key signature

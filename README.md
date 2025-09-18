@@ -45,6 +45,7 @@ If you're sure your file doesn't contain triplets, you can omit the triplet para
 |&#8209;section&nbsp;LIST|Comma-separated list of one-based measure numbers, each of which specifies the start of a section.|
 |&#8209;ottava&nbsp;LIST|Comma-separated list of octave shifts, each consisting of t_M:B:T=n where t is a track index, M:B:T is a time in Measure:Beat:Tick format, and n is a signed number of octaves to transpose the staff by.|
 |&#8209;staves&nbsp;LIST|Comma-separated list of track indices specifying which tracks are assigned to staves, from top to bottom.|
+|&#8209;combine&nbsp;LIST|Comma-separated list of pairs of staves to combine, each consisting of N_N where N is a one-based stave number.|
 |&#8209;key&nbsp;LIST|Comma-separated list of key signatures, each consisting of M=k where M is a one-based measure number, and k is the key signature in LilyPond note format, optionally followed by the letter 'm' to indicate a minor key.|
 |&#8209;time&nbsp;LIST|Comma-separated list of time signatures, each consisting of M=n/d where M is a one-based measure number, and n and d are the the time signature's numerator and denominator.|
 |&#8209;tempo&nbsp;LIST|Comma-separated list of tempos, each consisting of M=T where M is a one-based measure number and T is a tempo. The tempo can be a metronome mark, a description, or both. If the list contains spaces, enclose it in double quotes.|
@@ -62,6 +63,7 @@ If you're sure your file doesn't contain triplets, you can omit the triplet para
 |&#8209;clef&nbsp;1=C,2=C|Use alto clef for tracks 1 and 2.|
 |&#8209;ottava&nbsp;1_5:3:0=2|Shift track 1 up two octaves starting at MBT time 5:3:0. The longer example 1_5:3:0=2,1_8:1:45=0 also restores the same track to its unshifted state at 8:1:45.|
 |&#8209;staves&nbsp;3,1,2|Assign track 3 to the top staff, track 1 to the middle staff, and track 2 to the bottom staff.|
+|&#8209;combine&nbsp;1_2|Combine the first and second staves; stave numbers are one-based and start at the top.|
 |&#8209;time&nbsp;1=3/4,9=4/4|Set the time signature to 3/4 at measure 1, and then change it to 4/4 at measure 9.|
 |&#8209;key&nbsp;1=ef,9=csm|Set the key signature to E flat major at measure 1, and then change it to C sharp minor at measure 9.|
 |&#8209;tempo&nbsp;1=110,9=120|Set the tempo to 110 at measure 1, and then change it to 120 at measure 9. A unit can be specified, as in 9=2=50 to set 50 half notes per minute at measure 9. A description is also supported, as in 9=Largo or 9=Largo2=50.|

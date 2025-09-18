@@ -11,6 +11,7 @@
 		01		27dec24	add subtitle, opus, piece and staves params
 		02		06jan25	add time and key signature params
 		03		09jan25	add tempo param
+		04		17sep25	add combine param
  
 */
 
@@ -71,6 +72,16 @@ int CParamParser::ParseTrackIndex(CString sToken)
 		OnError(m_sErrMsg);
 	}
 	return iTrack;
+}
+
+int CParamParser::ParseStaveNumber(CString sToken)
+{
+	int	nStave;
+	if (!ParseInt(sToken, nStave, 1, SHRT_MAX)) {	// if invalid stave number
+		m_sErrMsg.Format(IDS_CLA_BAD_STAVE_NUMBER, GetCurFlagName(), sToken.GetString());
+		OnError(m_sErrMsg);
+	}
+	return nStave;
 }
 
 int CParamParser::ParseMeasureNumber(CString sToken)
@@ -172,6 +183,31 @@ void CParamParser::OnStaves(CString sParam)
 	while (!(sToken = sParam.Tokenize(_T(","), iStart)).IsEmpty()) {
 		int	iTrack = ParseTrackIndex(sToken);
 		m_arrStave.Add(iTrack);
+	}
+}
+
+void CParamParser::OnCombine(CString sParam)
+{
+	CString	sToken;
+	int	iStart = 0;
+	while (!(sToken = sParam.Tokenize(_T(","), iStart)).IsEmpty()) {
+		int	iSeparator = FindSeparator(sToken, '_');	// find separator
+		// stave numbers are one-based, but stave indices are zero-based
+		int	iStave0 = ParseStaveNumber(sToken.Left(iSeparator)) - 1;
+		int	iStave1 = ParseStaveNumber(sToken.Mid(iSeparator + 1)) - 1;
+		if (iStave0 == iStave1) {	// if stave combined with itself
+			m_sErrMsg.Format(IDS_CLA_BAD_STAVE_NUMBER, GetCurFlagName(), sToken.GetString());
+			OnError(m_sErrMsg);
+		}
+		int	iStaveMax = max(iStave0, iStave1);
+		int	nOldCombs = m_arrCombine.GetSize();
+		int	nNewCombs = max(nOldCombs, iStaveMax + 1);
+		m_arrCombine.FastSetSize(nNewCombs);
+		for (int iComb = nOldCombs; iComb < nNewCombs; iComb++) {	// for each new element
+			m_arrCombine[iComb] = -1;	// init to -1 meaning stave isn't combined
+		}
+		m_arrCombine[iStave0] = iStave1;	// cross-link pair of combined staves
+		m_arrCombine[iStave1] = iStave0;
 	}
 }
 
@@ -368,6 +404,9 @@ ParseParamEval:
 			break;
 		case F_staves:
 			OnStaves(pszParam);
+			break;
+		case F_combine:
+			OnCombine(pszParam);
 			break;
 		case F_time:
 			OnTimeSignature(pszParam);
