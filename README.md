@@ -49,6 +49,8 @@ If you're sure your file doesn't contain triplets, you can omit the triplet para
 |&#8209;key&nbsp;LIST|Comma-separated list of key signatures, each consisting of M=k where M is a one-based measure number, and k is the key signature in LilyPond note format, optionally followed by the letter 'm' to indicate a minor key.|
 |&#8209;time&nbsp;LIST|Comma-separated list of time signatures, each consisting of M=n/d where M is a one-based measure number, and n and d are the the time signature's numerator and denominator.|
 |&#8209;tempo&nbsp;LIST|Comma-separated list of tempos, each consisting of M=T where M is a one-based measure number and T is a tempo. The tempo can be a metronome mark, a description, or both. If the list contains spaces, enclose it in double quotes.|
+|&#8209;cmd|Comma-separated list of LilyPond commands, each consisting of t_M:B:T=s where t is a track index, M:B:T is a time in Measure:Beat:Tick format, and s is a LilyPond command.|
+|&#8209;block|LilyPond block definition, which is a toplevel expression.|
 |&#8209;params&nbsp;PATH|Read parameters from the specified text file.|
 |&#8209;help|Display the help.|
 |&#8209;license|Display the license.|
@@ -67,6 +69,7 @@ If you're sure your file doesn't contain triplets, you can omit the triplet para
 |&#8209;time&nbsp;1=3/4,9=4/4|Set the time signature to 3/4 at measure 1, and then change it to 4/4 at measure 9.|
 |&#8209;key&nbsp;1=ef,9=csm|Set the key signature to E flat major at measure 1, and then change it to C sharp minor at measure 9.|
 |&#8209;tempo&nbsp;1=110,9=120|Set the tempo to 110 at measure 1, and then change it to 120 at measure 9. A unit can be specified, as in 9=2=50 to set 50 half notes per minute at measure 9. A description is also supported, as in 9=Largo or 9=Largo2=50.|
+|&#8209;cmd&nbsp;1_5:3:0=\tieUp|Output the tie up command for track 1 at MBT time 5:3:0.|
 
 # Tips
 
