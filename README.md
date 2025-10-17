@@ -49,7 +49,7 @@ If you're sure your file doesn't contain triplets, you can omit the triplet para
 |&#8209;key&nbsp;LIST|Comma-separated list of key signatures, each consisting of M=k where M is a one-based measure number, and k is the key signature in LilyPond note format, optionally followed by the letter 'm' to indicate a minor key.|
 |&#8209;time&nbsp;LIST|Comma-separated list of time signatures, each consisting of M=n/d where M is a one-based measure number, and n and d are the the time signature's numerator and denominator.|
 |&#8209;tempo&nbsp;LIST|Comma-separated list of tempos, each consisting of M=T where M is a one-based measure number and T is a tempo. The tempo can be a metronome mark, a description, or both. If the list contains spaces, enclose it in double quotes.|
-|&#8209;cmd|Comma-separated list of LilyPond commands, each consisting of t_M:B:T=s where t is a track index, M:B:T is a time in Measure:Beat:Tick format, and s is a LilyPond command.|
+|&#8209;cmd&nbsp;LIST|Comma-separated list of LilyPond commands, each consisting of t_M:B:T=s where t is a track index, M:B:T is a time in Measure:Beat:Tick format, and s is a LilyPond command.|
 |&#8209;block|LilyPond block definition, which is a toplevel expression.|
 |&#8209;params&nbsp;PATH|Read parameters from the specified text file.|
 |&#8209;help|Display the help.|
