@@ -10,6 +10,7 @@
         00		09jan25	initial version
 		01		02apr25	fix tempo without unit
 		02		17sep25	add combine param
+		03		17oct25	add cmd and block params
  
 */
 
@@ -260,6 +261,19 @@ void CParams::Log() const
 		const CTempoChange&	tsc = m_arrTempo[iTempo];
 		_tprintf(_T("Tempo %d = %d %s\n"), iTempo, 
 			tsc.m_nMeasure, tsc.Format().GetString());
+	}
+	for (int iTrack = 0; iTrack < m_arrSchedCmdArray.GetSize(); iTrack++) {
+		const CSchedCmdArray& arrCmd = m_arrSchedCmdArray[iTrack];
+		_tprintf(_T("Track %d Cmds = %d\n"), iTrack, arrCmd.GetSize());
+		for (int iCmd = 0; iCmd < arrCmd.GetSize(); iCmd++) {
+			const CSchedCmd& lc = arrCmd[iCmd];
+			_tprintf(_T("Cmd %d = %s '%s'\n"), iCmd, 
+				lc.Format().GetString(), lc.m_sCmd);
+		}
+	}
+	_tprintf(_T("Blocks = %d\n"), m_arrBlock.GetSize());
+	for (int iBlock = 0; iBlock < m_arrBlock.GetSize(); iBlock++) {
+		_tprintf(_T("Block %d = %s\n"), iBlock, m_arrBlock[iBlock]);
 	}
 }
 

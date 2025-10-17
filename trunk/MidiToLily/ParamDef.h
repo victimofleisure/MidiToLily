@@ -13,6 +13,7 @@
 		03		06jan25	add time and key signature params
 		04		09jan25	add tempo param
 		05		17sep25	add combine param
+		06		17oct25	add cmd and block params
 
 */
 
@@ -61,6 +62,10 @@ PARAMDEF(tempo)		// Comma-separated list of tempos, each consisting of M=T
 					// where M is a one-based measure number and T is a tempo.
 					// The tempo can be a metronome mark, a description, or both.
 					// If the tempo list contains spaces, enclose it in quotes.
+PARAMDEF(cmd)		// Comma-separated list of LilyPond commands, each consisting
+					// of t_M:B:T=s where t is a track index, M:B:T is a time in
+                    // Measure:Beat:Tick format, and s is a LilyPond command.
+PARAMDEF(block)		// LilyPond block definition, which is a toplevel expression.
 PARAMDEF(params)	// Read parameters from the specified text file.
 PARAMDEF(help)      // Display the help.
 PARAMDEF(license)   // Display the license.
@@ -81,6 +86,7 @@ HELPEXAMPLEDEF(COMBINE)
 HELPEXAMPLEDEF(TIME_SIG)
 HELPEXAMPLEDEF(KEY_SIG)
 HELPEXAMPLEDEF(TEMPO)
+HELPEXAMPLEDEF(COMMAND)
 					
 #undef HELPEXAMPLEDEF
 #endif

@@ -12,6 +12,7 @@
 		02		06jan25	add time and key signature params
 		03		09jan25	add tempo param
 		04		17sep25	add combine param
+		05		17oct25	add cmd and block params
  
 */
 
@@ -276,6 +277,38 @@ void CParamParser::OnTempo(CString sParam)
 	}
 }
 
+void CParamParser::OnCommand(CString sParam)
+{
+	CString	sToken;
+	int	iStart = 0;
+	while (!(sToken = sParam.Tokenize(_T(","), iStart)).IsEmpty()) {
+		int	iSeparator = FindSeparator(sToken, '=');	// find separator
+		CString	sCmd(sToken.Mid(iSeparator + 1));
+		CSchedCmd	sc;
+		sc.m_sCmd = sCmd;
+		int	iTimeSeparator = FindSeparator(sToken, '_');	// find time separator
+		int	nTimeLen = iSeparator - iTimeSeparator - 1;
+		if (nTimeLen < 1) {	// if time not specified
+			m_sErrMsg.Format(IDS_CLA_CMD_NO_TIME, sToken.GetString());
+			OnError(m_sErrMsg);
+		}
+		CString	sTime(sToken.Mid(iTimeSeparator + 1, nTimeLen));
+		if (!sc.Scan(sTime)) {	// if invalid MBT time
+			m_sErrMsg.Format(IDS_CLA_CMD_BAD_TIME_FORMAT, sToken.GetString());
+			OnError(m_sErrMsg);
+		}
+		int	iTrack = ParseTrackIndex(sToken);
+		int	nNewSize = max(m_arrSchedCmdArray.GetSize(), iTrack + 1);
+		m_arrSchedCmdArray.SetSize(nNewSize);
+		m_arrSchedCmdArray[iTrack].Add(sc);
+	}
+}
+
+void CParamParser::OnBlock(CString pszParam)
+{
+	m_arrBlock.Add(pszParam);
+}
+
 void CParamParser::OnParams(CString sParam)
 {
 	m_iFlag = FLAG_NONE;	// flag is no longer pending
@@ -416,6 +449,12 @@ ParseParamEval:
 			break;
 		case F_tempo:
 			OnTempo(pszParam);
+			break;
+		case F_cmd:
+			OnCommand(pszParam);
+			break;
+		case F_block:
+			OnBlock(pszParam);
 			break;
 		case F_params:
 			OnParams(pszParam);

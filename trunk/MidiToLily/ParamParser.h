@@ -12,6 +12,7 @@
 		02		06jan25	add time and key signature params
 		03		09jan25	add tempo param
 		04		17sep25	add combine param
+		05		17oct25	add cmd and block params
  
 */
 
@@ -81,6 +82,8 @@ protected:
 	void	OnTimeSignature(CString sParam);
 	void	OnKeySignature(CString sParam);
 	void	OnTempo(CString sParam);
+	void	OnCommand(CString sParam);
+	void	OnBlock(CString sParam);
 	void	OnParams(CString sParam);
 	void	OnLogging(CString sParam);
 	static	CString	UnpackHelp(CString& sParam, int nParamHelpResID, bool bArgumentUpperCase = true);

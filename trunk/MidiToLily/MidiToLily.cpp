@@ -16,6 +16,7 @@
 		06		16sep25	fix comment only
 		07		17sep25	handle type 0 MIDI files
 		08		17sep25	add combine param
+		09		17oct25	add cmd and block params
  
 */
 
@@ -115,6 +116,7 @@ void CMidiToLily::ResetTrackData()
 	m_iTimeSig = 0;
 	m_iKeySig = 0;
 	m_iTempo = 0;
+	m_iSchedCmd = 0;
 }
 
 void CMidiToLily::OnError(CString sErrMsg)
@@ -342,6 +344,14 @@ void CMidiToLily::OnMidiFileRead(CMidiFile::CMidiTrackArray& arrTrack)
 			sErrMsg.Format(IDS_CLA_STAVE_NUMBER_RANGE, iMate + 1, pszFlagName);
 			OnError(sErrMsg);
 		}
+	}
+	m_params.m_arrSchedCmdArray.SetSize(nTracks);	// force one scheduled command array per track
+	int	nCmds = m_params.m_arrSchedCmdArray.GetSize();
+	if (nCmds > nTracks) {	// if we have scheduled command arrays for non-existent commands
+		LPCTSTR	pszFlagName = CParamParser::GetFlagName(CParamParser::F_cmd);
+		CString	sErrMsg;
+		sErrMsg.Format(IDS_CLA_TRACK_INDEX_RANGE, nCmds - 1, pszFlagName);
+		OnError(sErrMsg);
 	}
 }
 
@@ -674,19 +684,30 @@ void CMidiToLily::AddScheduledItems(CString& sMeasure, int nTime)
 		const COttavaArray&	arrOttava = m_params.m_arrOttavaArray[iTrack];
 		if (m_iOttava < arrOttava.GetSize()) {	// if ottava index is within track's ottava array
 			const COttava&	ot = arrOttava[m_iOttava];
-			if (m_iMeasure >= ot.m_nMeasure - 1) {	// if ottava's measure is due
-				// compute ottava's time in ticks relative to start of measure
-				int	nOttavaTime = (ot.m_nBeat - 1) * m_nTimebase + ot.m_nTick;
-				if (nTime >= nOttavaTime) {	// if ottava's beat and tick are also due
-					CString	sOttava;
-					sOttava.Format(_T("%d"), ot.m_nShift);
-					sMeasure += _T("\\ottava #") + sOttava + ' ';
-					if (IsLogging(LOG_SCHEDULED_ITEMS)) {
-						_tprintf(_T("%s ottava %d\n"), 
-							ot.Format().GetString(), ot.m_nShift);
-					}
-					m_iOttava++;
+			if (ot.IsItemDue(m_iMeasure, nTime, m_nTimebase)) {	// if ottava's time is due
+				CString	sOttava;
+				sOttava.Format(_T("%d"), ot.m_nShift);
+				sMeasure += _T("\\ottava #") + sOttava + ' ';
+				if (IsLogging(LOG_SCHEDULED_ITEMS)) {
+					_tprintf(_T("%s ottava %d\n"), 
+						ot.Format().GetString(), ot.m_nShift);
 				}
+				m_iOttava++;
+			}
+		}
+	}
+	int	nSchedCmdTracks = m_params.m_arrSchedCmdArray.GetSize();
+	if (iTrack < nSchedCmdTracks) {	// if track within scheduled command track range
+		const CSchedCmdArray&	arrCmd = m_params.m_arrSchedCmdArray[iTrack];
+		if (m_iSchedCmd < arrCmd.GetSize()) {	// if command index is within track's command array
+			const CSchedCmd&	sc = arrCmd[m_iSchedCmd];
+			if (sc.IsItemDue(m_iMeasure, nTime, m_nTimebase)) {	// if command's time is due
+				sMeasure += sc.m_sCmd + ' ';
+				if (IsLogging(LOG_SCHEDULED_ITEMS)) {
+					_tprintf(_T("%s %s\n"), 
+						sc.Format().GetString(), sc.m_sCmd.GetString());
+				}
+				m_iSchedCmd++;
 			}
 		}
 	}
@@ -968,6 +989,9 @@ void CMidiToLily::WriteLily(LPCTSTR pszOutputFilePath)
 	fLily.WriteString(
 		_T("\\version \"2.24.3\"\n")	// specify LilyPond version number
 		_T("\\language \"english\"\n"));	// select English accidentals (s, f)
+	for (int iBlock = 0; iBlock < m_params.m_arrBlock.GetSize(); iBlock++) {	// for each block
+		fLily.WriteString(m_params.m_arrBlock[iBlock] + '\n');	// output block definition
+	}
 	WriteBookHeader(fLily);
 	int	nTracks = m_arrTrack.GetSize();
 	for (int iTrack = m_iFirstNoteTrack; iTrack < nTracks; iTrack++) {	// for each note track

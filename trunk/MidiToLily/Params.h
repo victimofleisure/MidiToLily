@@ -9,6 +9,7 @@
 		rev		date	comments
         00		09jan25	initial version
 		01		17sep25	add combine param
+		02		17oct25	add cmd and block params
  
 */
 
@@ -31,6 +32,7 @@ public:
 		bool	operator!=(const CMbtTime& mt) const;
 		bool	operator>(const CMbtTime& mt) const;
 		bool	operator<(const CMbtTime& mt) const;
+		bool	IsItemDue(int nMeasure, int nTime, int nTimebase) const;
 	};
 	class CKeySig {	// key signature
 	public:
@@ -113,6 +115,14 @@ public:
 		int		m_nMeasure;		// one-based measure number at which change occurs
 	};
 	typedef CArrayEx<CTempoChange, CTempoChange&> CTempoChangeArray;
+	class CSchedCmd : public CMbtTime {	// scheduled command
+	public:
+		CSchedCmd() {}
+		CSchedCmd(int nMeasure, int nBeat, int nTick, CString sCmd);
+		CString	m_sCmd;		// command string
+	};
+	typedef CArrayEx<CSchedCmd, CSchedCmd&> CSchedCmdArray;
+	typedef CArrayEx<CSchedCmdArray, CSchedCmdArray&> CSchedCmdArrayArray;
 	static bool	IsPowerOfTwo(int n);
 	static void	RenameExtension(CString& sPath, CString sExtension);
 	static void	RemoveExtension(CString& sPath);
@@ -161,6 +171,18 @@ inline bool CParamBase::CMbtTime::operator<(const CMbtTime& mt) const
 	if (m_nBeat > mt.m_nBeat)
 		return false;
 	return m_nTick < mt.m_nTick;
+}
+
+inline bool CParamBase::CMbtTime::IsItemDue(int nMeasure, int nTime, int nTimebase) const
+{
+	if (nMeasure >= m_nMeasure - 1) {	// if item's measure is due
+		// compute item's time in ticks relative to start of measure
+		int	nItemTime = (m_nBeat - 1) * nTimebase + m_nTick;
+		if (nTime >= nItemTime) {	// if item's beat and tick are also due
+			return true;
+		}
+	}
+	return false;
 }
 
 inline CParamBase::CKeySig::CKeySig(int nAccs, bool bIsMinor)
@@ -287,6 +309,11 @@ inline bool CParamBase::CTempoChange::operator<(const CTempoChange& tc) const
 	return m_nMeasure < tc.m_nMeasure;
 }
 
+inline CParamBase::CSchedCmd::CSchedCmd(int nMeasure, int nBeat, int nTick, CString sCmd)
+	: CMbtTime(nMeasure, nBeat, nTick), m_sCmd(sCmd)
+{
+}
+
 class CParams : public CParamBase {
 public:
 	CParams();
@@ -311,6 +338,8 @@ public:
 	CKeySigChangeArray	m_arrKeySig;	// array of key signature changes
 	CTimeSigChangeArray	m_arrTimeSig;	// array of time signature changes
 	CTempoChangeArray	m_arrTempo;		// array of tempo changes
+	CSchedCmdArrayArray	m_arrSchedCmdArray;	// one array of scheduled command arrays per track
+	CStringArrayEx	m_arrBlock;	// array of block definitions
 	void	Finalize();
 	void	Log() const;
 };

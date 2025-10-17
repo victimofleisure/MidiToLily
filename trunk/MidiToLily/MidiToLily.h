@@ -14,6 +14,7 @@
 		04		08jan25	add scan MBT time
 		05		09jan25	add tempo param
 		06		17sep25	add first note track
+		07		17oct25	add cmd and block params
  
 */
 
@@ -132,6 +133,7 @@ protected:
 	int		m_iTimeSig;		// index of next item in time signature array
 	int		m_iKeySig;		// index of next item in key signature array
 	int		m_iTempo;		// index of next item in tempo array
+	int		m_iSchedCmd;	// index of next item in scheduled command array
 
 // Helpers
 	void	ResetTrackData();
